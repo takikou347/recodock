@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Recodock",
+    "slug": "recodock",
+    "scheme": "recodock",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.takikou347.recodock",
+      "supportsTablet": true
+    },
+    "platforms": ["ios"]
+  }
+}

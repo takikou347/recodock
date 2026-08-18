@@ -1,0 +1,8 @@
+-- ローカル開発・テスト用 seed。
+-- ユーザー作成時の初期データ(帳簿・プリセットカテゴリ・user_modules)は
+-- handle_new_user トリガーが自動生成するため、ここでは投入しない。
+--
+-- テストユーザーの作成は Supabase Auth の Admin API(supabase-js の
+-- auth.admin.createUser)をテストハーネスから呼ぶ方針
+-- (docs/recodock/02_design/06_test_policy.md 2 章・4 章)。
+-- 性能検証用の1万件 seed も同ハーネス側で生成する(NFR-P2)。
