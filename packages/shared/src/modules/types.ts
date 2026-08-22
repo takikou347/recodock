@@ -2,15 +2,7 @@
 // 各モジュールはこの定義を実装してコアに登録し、コアはモジュール固有の知識を持たない。
 // 詳細: docs/recodock/02_design/01_screen_design.md 3.4(develop-docs リポジトリ)
 
-export const MODULE_KEYS = [
-  'calendar',
-  'money',
-  'career',
-  'diary',
-  'items',
-  'notes',
-  'map',
-] as const;
+export const MODULE_KEYS = ['calendar', 'money', 'diary', 'items', 'notes', 'map'] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 

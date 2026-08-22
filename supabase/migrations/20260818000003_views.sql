@@ -61,11 +61,7 @@ select 'notes', 'note', id, user_id, (updated_at at time zone 'Asia/Tokyo')::dat
   from public.notes
 union all
 select 'map', 'spot', id, user_id, visited_on, name, concat_ws(' ', name, memo)
-  from public.spots
-union all
-select 'career', 'career_entry', id, user_id, started_on, organization,
-       concat_ws(' ', organization, role, description)
-  from public.career_entries;
+  from public.spots;
 
 -- anon にはビューも公開しない
 revoke all on public.calendar_entries from anon;

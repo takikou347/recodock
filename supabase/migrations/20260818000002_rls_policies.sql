@@ -53,7 +53,6 @@ begin
   foreach t in array array[
     'user_modules', 'push_tokens', 'scheduled_notifications', 'user_settings',
     'events', 'event_overrides', 'event_reminders',
-    'career_entries', 'career_skills', 'career_projects',
     'spots', 'diaries', 'diary_photos', 'items', 'notes'
   ]
   loop

@@ -1,6 +1,6 @@
 # Recodock
 
-カレンダーをコアに、記録系機能(家計簿・経歴・日記・持ち物・メモ・地図)をモジュールとして拡張できるパーソナル記録プラットフォーム。
+カレンダーをコアに、記録系機能(家計簿・日記・持ち物・メモ・地図)をモジュールとして拡張できるパーソナル記録プラットフォーム。
 
 - 要件定義・基本設計・ADR: [takikou347/develop-docs](https://github.com/takikou347/develop-docs) の `docs/recodock/`
 - 技術スタック: TypeScript / React(Vite)/ React Native(Expo)/ Supabase / Vercel

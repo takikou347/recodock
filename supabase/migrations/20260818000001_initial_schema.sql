@@ -24,7 +24,7 @@ create table public.user_modules (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   module_key text not null check (
-    module_key in ('calendar', 'money', 'career', 'diary', 'items', 'notes', 'map')
+    module_key in ('calendar', 'money', 'diary', 'items', 'notes', 'map')
   ),
   is_enabled boolean not null default true,
   sort_order integer not null default 0,
@@ -250,54 +250,7 @@ create table public.recurring_rules (
 );
 
 ------------------------------------------------------------
--- Reco Career(3.4)
-------------------------------------------------------------
-
--- 職歴・学歴(CAR-01)
-create table public.career_entries (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null check (kind in ('work', 'education')),
-  organization text not null,
-  role text,
-  description text,
-  started_on date not null,
-  ended_on date,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  check (ended_on is null or ended_on >= started_on)
-);
-
--- スキル・資格(CAR-02)。expires_on は期限通知(US-CA3)の対象
-create table public.career_skills (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null check (kind in ('skill', 'certification')),
-  name text not null,
-  acquired_on date,
-  expires_on date,
-  memo text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- プロジェクト実績(CAR-03)
-create table public.career_projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  career_entry_id uuid references public.career_entries (id) on delete set null,
-  name text not null,
-  tech_stack text[] not null default '{}',
-  role text,
-  outcome text,
-  started_on date,
-  ended_on date,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-------------------------------------------------------------
--- Reco Map(3.8)※ diaries が spot_id で参照するため先に作成
+-- Reco Map(3.7)※ diaries が spot_id で参照するため先に作成
 ------------------------------------------------------------
 
 -- 訪問記録・行きたい場所(MAP-01, MAP-04)
@@ -319,7 +272,7 @@ create index spots_user_status_idx on public.spots (user_id, status);
 create index spots_user_coord_idx on public.spots (user_id, latitude, longitude);
 
 ------------------------------------------------------------
--- Reco Diary(3.5)
+-- Reco Diary(3.4)
 ------------------------------------------------------------
 
 -- 日記(DIA-01)。1日1件以上のため entry_date は UNIQUE にしない
@@ -352,7 +305,7 @@ create table public.diary_photos (
 );
 
 ------------------------------------------------------------
--- Reco Items(3.6)
+-- Reco Items(3.5)
 ------------------------------------------------------------
 
 -- 持ち物(ITM-01)。warranty_expires_on / replace_after は期限通知(ITM-03)の対象
@@ -377,7 +330,7 @@ create index items_user_name_idx on public.items (user_id, name);
 create index items_tags_idx on public.items using gin (tags);
 
 ------------------------------------------------------------
--- Reco Notes(3.7)
+-- Reco Notes(3.6)
 ------------------------------------------------------------
 
 -- メモ(MEM-01)。チェックリスト(MEM-03)は Markdown の `- [ ]` 記法で表現
@@ -407,7 +360,6 @@ begin
     'user_modules', 'push_tokens', 'scheduled_notifications', 'user_settings',
     'events', 'event_overrides', 'event_reminders',
     'ledgers', 'ledger_members', 'accounts', 'categories', 'transactions', 'budgets', 'recurring_rules',
-    'career_entries', 'career_skills', 'career_projects',
     'spots', 'diaries', 'diary_photos', 'items', 'notes'
   ]
   loop
@@ -436,7 +388,7 @@ declare
   idx integer := 0;
 begin
   -- 全モジュールを有効状態で登録(CORE-02)
-  foreach module_key in array array['calendar', 'money', 'career', 'diary', 'items', 'notes', 'map']
+  foreach module_key in array array['calendar', 'money', 'diary', 'items', 'notes', 'map']
   loop
     insert into public.user_modules (user_id, module_key, is_enabled, sort_order)
     values (new.id, module_key, true, idx);
