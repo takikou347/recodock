@@ -17,6 +17,8 @@ Recodock(レコドック): カレンダーをコアに、記録系機能をモ�
 
 ## 必ず守るルール
 
+コーディング規約は `docs/coding-standards.md` を正とする(命名・ディレクトリ構造・データアクセス・TanStack Query・スタイル・テスト・Git の規約)。機械化済みの項目は ESLint / Prettier / CI が強制する。以下は特に重要なもの。
+
 - **supabase-js の import は `packages/shared/src/supabase` と `packages/shared/src/data` のみ**(ADR-0004)。
   UI からはデータアクセス層のリポジトリ関数を経由する。ESLint の `no-restricted-imports` で強制済み。
 - **認可は RLS が境界**(NFR-S3)。アプリ側のチェックは UX 補助であり、新テーブルには必ず RLS ポリシーを付ける。

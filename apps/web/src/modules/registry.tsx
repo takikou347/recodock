@@ -1,5 +1,6 @@
-import type { ModuleDefinition } from '@recodock/shared';
 import type { RouteObject } from 'react-router-dom';
+
+import type { ModuleDefinition } from '@recodock/shared';
 
 import { CalendarHomePage } from './calendar/CalendarHomePage';
 

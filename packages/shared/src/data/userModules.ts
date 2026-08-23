@@ -1,8 +1,8 @@
 // データアクセス層のサンプル実装(モジュール有効状態: CORE-02)。
 // 他テーブルのリポジトリ関数もこのパターン(クライアントを引数に取る純関数)で追加していく。
 // UI は supabase-js を直接呼ばず、必ずこの層を経由する(ADR-0004)。
-import type { RecodockClient } from '../supabase/client';
 import type { ModuleKey } from '../modules/types';
+import type { RecodockClient } from '../supabase/client';
 
 export interface UserModule {
   moduleKey: ModuleKey;

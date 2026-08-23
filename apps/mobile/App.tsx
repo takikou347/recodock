@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
  * docs/recodock/02_design/01_screen_design.md 3.3 を参照。
  * 生体認証ロック(NFR-S6)を起動時に挟む。
  */
-export default function App() {
+export function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recodock</Text>
