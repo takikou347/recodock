@@ -1,0 +1,91 @@
+/* MEM-61 メモ編集(Markdown)。 */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-7);
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+
+.back:hover {
+  color: var(--color-ink);
+}
+
+.savedState {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.headerActions {
+  margin-left: auto;
+}
+
+.titleInput {
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-heading);
+  font-size: var(--font-size-6xl);
+  width: 100%;
+}
+
+.titleInput::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: var(--border-width) solid var(--color-border-faint);
+  border-bottom: var(--border-width) solid var(--color-border-faint);
+  padding: var(--space-1) 0;
+}
+
+.toolbarHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-subtle);
+}
+
+.bodyInput {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  outline: none;
+  background: none;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  line-height: 1.9;
+  color: var(--color-ink-body);
+}
+
+.bodyInput::placeholder {
+  color: var(--color-ink-faint);
+}
+
+@media (width < 768px) {
+  .page {
+    padding: var(--space-4);
+  }
+}

@@ -36,6 +36,17 @@ export const events: CalendarEventRecord[] = [
     rrule: null,
     rruleUntil: null,
   },
+  {
+    id: 'event-2',
+    title: '読書会',
+    startsAt: '2026-08-01T11:00:00.000Z',
+    endsAt: '2026-08-01T12:00:00.000Z',
+    isAllDay: false,
+    location: null,
+    memo: null,
+    rrule: 'FREQ=WEEKLY;BYDAY=SA',
+    rruleUntil: null,
+  },
 ];
 
 export const calendarEntries: CalendarEntryRecord[] = [

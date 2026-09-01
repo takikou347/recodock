@@ -170,18 +170,19 @@ function Sidebar({ modules, activeKey, onOpenLauncher }: NavProps) {
         <div className={styles.secondaryNav}>
           <p className={styles.secondaryNavLabel}>{activeSecondaryNav.label}</p>
           <div className={styles.secondaryNavList}>
-            {activeSecondaryNav.items.map((item, index) => (
-              <span
-                key={item}
-                className={[
-                  styles.secondaryNavItem,
-                  index === 0 ? styles.secondaryNavItemActive : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
+            {activeSecondaryNav.items.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end
+                className={({ isActive }) =>
+                  [styles.secondaryNavItem, isActive ? styles.secondaryNavItemActive : '']
+                    .filter(Boolean)
+                    .join(' ')
+                }
               >
-                {item}
-              </span>
+                {item.label}
+              </NavLink>
             ))}
           </div>
         </div>

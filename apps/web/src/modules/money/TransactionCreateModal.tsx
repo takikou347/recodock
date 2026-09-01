@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { AppError } from '@recodock/shared';
+import { AppError, type TransactionRecord } from '@recodock/shared';
 
 import { Button } from '../../components/Button';
 import { DatePicker } from '../../components/DatePicker';
@@ -11,7 +11,13 @@ import { TextField } from '../../components/TextField';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../core/auth';
 import { toDateKey } from '../../lib/monthRange';
-import { useCreateTransaction, useMoneyAccounts, useMoneyCategories } from './useMoneySummary';
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useMoneyAccounts,
+  useMoneyCategories,
+  useUpdateTransaction,
+} from './useMoneySummary';
 
 import styles from './TransactionCreateModal.module.css';
 
@@ -25,19 +31,28 @@ const KIND_OPTIONS = [
 
 export interface TransactionCreateModalProps {
   isOpen: boolean;
+  /** 渡すと編集モード(MON-22 は作成・編集を兼ねる) */
+  transaction?: TransactionRecord;
   onClose: () => void;
 }
 
 /**
- * 取引の追加(MON-22 の PC 版)。
+ * 取引の追加・編集(MON-22 の PC 版)。
  * 種別で入力項目が変わる: 振替は入金先を選び、カテゴリを持たない(DB の CHECK 制約に対応)。
  */
-export function TransactionCreateModal({ isOpen, onClose }: TransactionCreateModalProps) {
+export function TransactionCreateModal({
+  isOpen,
+  transaction,
+  onClose,
+}: TransactionCreateModalProps) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const { accounts } = useMoneyAccounts();
   const { categories } = useMoneyCategories();
   const createTransaction = useCreateTransaction(user?.id);
+  const updateTransaction = useUpdateTransaction();
+  const deleteTransaction = useDeleteTransaction();
+  const loadedId = useRef<string | undefined>(undefined);
 
   const [kind, setKind] = useState<TransactionKindValue>('expense');
   const [amount, setAmount] = useState('');
@@ -47,6 +62,23 @@ export function TransactionCreateModal({ isOpen, onClose }: TransactionCreateMod
   const [transferAccountId, setTransferAccountId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [errorText, setErrorText] = useState<string>();
+
+  // 編集対象が来たらフォームへ読み込む(開き直すたびに一度だけ)
+  useEffect(() => {
+    if (!isOpen) {
+      loadedId.current = undefined;
+      return;
+    }
+    if (!transaction || loadedId.current === transaction.id) return;
+    loadedId.current = transaction.id;
+    setKind(transaction.kind);
+    setAmount(String(transaction.amount));
+    setMemo(transaction.memo ?? '');
+    setOccurredOn(new Date(`${transaction.occurredOn}T00:00:00`));
+    setAccountId(transaction.accountId);
+    setTransferAccountId(transaction.transferAccountId ?? '');
+    setCategoryId(transaction.categoryId ?? '');
+  }, [isOpen, transaction]);
 
   const accountOptions = accounts.map((account) => ({ value: account.id, label: account.name }));
   const categoryOptions = categories
@@ -78,16 +110,21 @@ export function TransactionCreateModal({ isOpen, onClose }: TransactionCreateMod
     }
     setErrorText(undefined);
 
+    const input = {
+      kind,
+      amount: parsed,
+      occurredOn: toDateKey(occurredOn),
+      accountId: selectedAccount,
+      transferAccountId: kind === 'transfer' ? selectedTransferAccount : null,
+      categoryId: kind === 'transfer' ? null : selectedCategory || null,
+      memo: memo.trim() || null,
+    };
     try {
-      await createTransaction.mutateAsync({
-        kind,
-        amount: parsed,
-        occurredOn: toDateKey(occurredOn),
-        accountId: selectedAccount,
-        transferAccountId: kind === 'transfer' ? selectedTransferAccount : null,
-        categoryId: kind === 'transfer' ? null : selectedCategory || null,
-        memo: memo.trim() || null,
-      });
+      if (transaction) {
+        await updateTransaction.mutateAsync({ transactionId: transaction.id, input });
+      } else {
+        await createTransaction.mutateAsync(input);
+      }
       showToast({ message: '取引を保存しました' });
       setAmount('');
       setMemo('');
@@ -97,14 +134,30 @@ export function TransactionCreateModal({ isOpen, onClose }: TransactionCreateMod
     }
   };
 
+  const onDelete = async () => {
+    if (!transaction) return;
+    await deleteTransaction.mutateAsync(transaction.id);
+    showToast({ message: '取引を削除しました' });
+    onClose();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="取引を追加"
+      title={transaction ? '取引を編集' : '取引を追加'}
       icon="money"
       footer={
         <>
+          {transaction ? (
+            <Button
+              variant="text"
+              onClick={() => void onDelete()}
+              disabled={deleteTransaction.isPending}
+            >
+              削除
+            </Button>
+          ) : null}
           <Button variant="secondary" onClick={onClose}>
             キャンセル
           </Button>

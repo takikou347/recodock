@@ -13,9 +13,12 @@ import { useAuth } from './auth';
 import layout from './pageLayout.module.css';
 import styles from './SettingsPage.module.css';
 
-/** 設定の既定値。未設定のキーはこの値で表示する。 */
-const DEFAULT_FLAGS: Readonly<Record<UserSettingKey, boolean>> = {
-  biometric_lock: false,
+/**
+ * 設定の既定値。未設定のキーはこの値で表示する。
+ * 生体認証ロック(NFR-S6)は端末ローカル設定で DB に持たず、Web は対象外のためここには出さない
+ * (02_data_model.md 3.1)。
+ */
+const DEFAULT_FLAGS: Readonly<Partial<Record<UserSettingKey, boolean>>> = {
   notifications: true,
 };
 
@@ -43,6 +46,7 @@ export function SettingsPage() {
   });
 
   const flags = { ...DEFAULT_FLAGS, ...(query.data ?? {}) };
+  const isNotificationsOn = flags.notifications ?? true;
 
   return (
     <div className={layout.page}>
@@ -59,17 +63,9 @@ export function SettingsPage() {
       ) : (
         <Card isFlush>
           <div className={styles.row}>
-            <span className={styles.label}>生体認証ロック</span>
-            <Toggle
-              isOn={flags.biometric_lock}
-              ariaLabel="生体認証ロック"
-              onChange={(value) => mutation.mutate({ key: 'biometric_lock', value })}
-            />
-          </div>
-          <div className={styles.row}>
             <span className={styles.label}>通知設定</span>
             <Toggle
-              isOn={flags.notifications}
+              isOn={isNotificationsOn}
               ariaLabel="通知設定"
               onChange={(value) => mutation.mutate({ key: 'notifications', value })}
             />

@@ -2,12 +2,14 @@ import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { formatTime } from '@recodock/shared';
+import { AppError, formatTime, storageRepo } from '@recodock/shared';
 
 import type { IconName } from '../../components/icons/Icon';
 import { Icon } from '../../components/icons/Icon';
 import { useToast } from '../../components/Toast';
+import { useAuth } from '../../core/auth';
 import { moduleThemeClass } from '../../lib/moduleTheme';
+import { supabase } from '../../lib/supabase';
 import type { DiaryBlock, ImageAlign } from './useDiaries';
 import { serializeBlocks, useDiary, useSaveDiary } from './useDiaries';
 
@@ -102,6 +104,37 @@ export function DiaryEditorPage() {
   const { diaryId } = useParams();
   const diary = useDiary(diaryId);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // 写真を Storage(diary-photos。user_id プレフィックス: NFR-S4)へ上げ、本文へ画像ブロックを足す
+  const onPickPhoto = async (file: File) => {
+    if (!diary || !user) return;
+    setIsUploading(true);
+    try {
+      const uploaded = await storageRepo.uploadPhoto(supabase, 'diary-photos', user.id, file);
+      const photo = await storageRepo.addDiaryPhoto(supabase, user.id, diary.id, uploaded.path, 0);
+      commit((current) => [
+        ...current,
+        {
+          id: nextBlockId(),
+          kind: 'image',
+          assetId: photo.id,
+          fileName: file.name,
+          align: 'full',
+          caption: '',
+        },
+      ]);
+      showToast({ message: '写真を追加しました' });
+    } catch (error) {
+      showToast({
+        message: error instanceof AppError ? error.message : '写真のアップロードに失敗しました',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const [title, setTitle] = useState('');
   const [blocks, setBlocks] = useState<readonly DiaryBlock[]>([]);
@@ -288,14 +321,31 @@ export function DiaryEditorPage() {
         <div className={styles.asideCard}>
           <p className={styles.asideLabel}>写真</p>
           <div className={styles.thumbRow}>
-            <span className={styles.thumb}>
-              <Icon name="image" size={20} />
-            </span>
-            <button type="button" className={styles.thumbAdd} aria-label="写真を追加">
+            <button
+              type="button"
+              className={styles.thumbAdd}
+              aria-label="写真を追加"
+              disabled={isUploading}
+              onClick={() => photoInputRef.current?.click()}
+            >
               <Icon name="plus" size={18} />
             </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              aria-label="写真ファイルを選択"
+              onChange={(changeEvent) => {
+                const file = changeEvent.target.files?.[0];
+                changeEvent.target.value = '';
+                if (file) void onPickPhoto(file);
+              }}
+            />
           </div>
-          <p className={styles.asideHint}>サムネイルから本文へドラッグして挿入</p>
+          <p className={styles.asideHint}>
+            {isUploading ? 'アップロード中…' : '追加した写真は本文の画像ブロックになります'}
+          </p>
         </div>
 
         <button

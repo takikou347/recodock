@@ -62,3 +62,28 @@
   background: var(--color-diary-bg);
   color: var(--color-danger-active);
 }
+
+/* ITM-50 のキーワード検索 */
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  max-width: 420px;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: var(--font-size-md);
+}
+
+.searchInput::placeholder {
+  color: var(--color-ink-subtle);
+}

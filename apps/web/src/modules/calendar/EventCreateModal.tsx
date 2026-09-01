@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { AppError } from '@recodock/shared';
+import { AppError, type CalendarEventRecord, eventsRepo, formatTime } from '@recodock/shared';
 
 import { Button } from '../../components/Button';
 import { DatePicker } from '../../components/DatePicker';
-import { Icon } from '../../components/icons/Icon';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
 import { TextField } from '../../components/TextField';
@@ -12,7 +11,8 @@ import { useToast } from '../../components/Toast';
 import { Toggle } from '../../components/Toggle';
 import { useAuth } from '../../core/auth';
 import { toDateKey } from '../../lib/monthRange';
-import { useCreateEvent } from './useCalendarEntries';
+import { supabase } from '../../lib/supabase';
+import { useCreateEvent, useUpdateEvent } from './useCalendarEntries';
 
 import styles from './EventCreateModal.module.css';
 
@@ -44,40 +44,82 @@ export interface EventCreateModalProps {
   isOpen: boolean;
   /** 初期日付(カレンダーで選択中の日) */
   date: Date;
+  /** 渡すと編集モード(CAL-12 は作成・編集を兼ねる)。繰り返しはすべての回に反映 */
+  event?: CalendarEventRecord;
   onClose: () => void;
 }
 
-/** CAL-12 予定作成。PC は画面中央モーダル、SP はボトムシート(1e オーバーレイ規則)。 */
-export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProps) {
+/** CAL-12 予定作成・編集。PC は画面中央モーダル、SP はボトムシート(1e オーバーレイ規則)。 */
+export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateModalProps) {
   const { showToast } = useToast();
   const { user } = useAuth();
   const createEvent = useCreateEvent(user?.id);
+  const updateEvent = useUpdateEvent();
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(date);
   const [endDate, setEndDate] = useState(date);
+  const [startTime, setStartTime] = useState('17:00');
+  const [endTime, setEndTime] = useState('18:00');
+  const [location, setLocation] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
-  const [recurrence, setRecurrence] = useState<RecurrenceValue>('weekly');
+  const [recurrence, setRecurrence] = useState<RecurrenceValue>('none');
   const [reminder, setReminder] = useState<ReminderValue>('30');
   const [titleError, setTitleError] = useState<string>();
+  const loadedEventId = useRef<string | undefined>(undefined);
+
+  // 編集対象が来たらフォームへ読み込む(開き直すたびに一度だけ)
+  useEffect(() => {
+    if (!isOpen) {
+      loadedEventId.current = undefined;
+      return;
+    }
+    if (!event || loadedEventId.current === event.id) return;
+    loadedEventId.current = event.id;
+    const starts = new Date(event.startsAt);
+    const ends = new Date(event.endsAt);
+    setTitle(event.title);
+    setStartDate(starts);
+    setEndDate(ends);
+    setStartTime(formatTime(starts));
+    setEndTime(formatTime(ends));
+    setLocation(event.location ?? '');
+    setIsAllDay(event.isAllDay);
+    setRecurrence(event.rrule ? (event.rrule.includes('MONTHLY') ? 'monthly' : 'weekly') : 'none');
+  }, [isOpen, event]);
 
   const onSave = async () => {
     if (!title.trim()) {
       setTitleError('タイトルを入力してください');
       return;
     }
-    if (endDate < startDate) {
-      setTitleError('終了日は開始日以降にしてください');
+    const startsAt = new Date(`${toDateKey(startDate)}T${isAllDay ? '00:00' : startTime}:00`);
+    const endsAt = new Date(`${toDateKey(endDate)}T${isAllDay ? '23:59' : endTime}:00`);
+    if (endsAt < startsAt) {
+      setTitleError('終了は開始以降にしてください');
       return;
     }
     setTitleError(undefined);
+    const input = {
+      title: title.trim(),
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      isAllDay,
+      location: location.trim() || null,
+      rrule: recurrence === 'none' ? null : RRULE_BY_OPTION[recurrence],
+    };
     try {
-      await createEvent.mutateAsync({
-        title: title.trim(),
-        startsAt: new Date(`${toDateKey(startDate)}T09:00:00`).toISOString(),
-        endsAt: new Date(`${toDateKey(endDate)}T10:00:00`).toISOString(),
-        isAllDay,
-        rrule: recurrence === 'none' ? null : RRULE_BY_OPTION[recurrence],
-      });
+      const saved = event
+        ? await updateEvent.mutateAsync({ eventId: event.id, input })
+        : await createEvent.mutateAsync(input);
+      // リマインドは分前の配列として置き換える(CAL-03)
+      if (user) {
+        await eventsRepo.replaceReminders(
+          supabase,
+          user.id,
+          saved.id,
+          reminder === 'none' ? [] : [Number(reminder)],
+        );
+      }
       showToast({ message: '予定を保存しました' });
       setTitle('');
       onClose();
@@ -90,15 +132,19 @@ export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProp
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="予定を作成"
+      title={event ? '予定を編集' : '予定を作成'}
       icon="calendar"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             キャンセル
           </Button>
-          <Button variant="primary" onClick={() => void onSave()} disabled={createEvent.isPending}>
-            {createEvent.isPending ? '保存中…' : '保存する'}
+          <Button
+            variant="primary"
+            onClick={() => void onSave()}
+            disabled={createEvent.isPending || updateEvent.isPending}
+          >
+            {createEvent.isPending || updateEvent.isPending ? '保存中…' : '保存する'}
           </Button>
         </>
       }
@@ -114,14 +160,36 @@ export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProp
       <div className={styles.timeRow}>
         <div className={styles.timeField}>
           <span className={styles.fieldLabel}>開始</span>
-          <DatePicker value={startDate} onChange={setStartDate} ariaLabel="開始日" />
+          <div className={styles.dateTimePair}>
+            <DatePicker value={startDate} onChange={setStartDate} ariaLabel="開始日" />
+            {!isAllDay ? (
+              <input
+                className={styles.timeInput}
+                type="time"
+                value={startTime}
+                aria-label="開始時刻"
+                onChange={(changeEvent) => setStartTime(changeEvent.target.value)}
+              />
+            ) : null}
+          </div>
         </div>
         <span className={styles.arrow} aria-hidden="true">
           →
         </span>
         <div className={styles.timeField}>
           <span className={styles.fieldLabel}>終了</span>
-          <DatePicker value={endDate} onChange={setEndDate} ariaLabel="終了日" />
+          <div className={styles.dateTimePair}>
+            <DatePicker value={endDate} onChange={setEndDate} ariaLabel="終了日" />
+            {!isAllDay ? (
+              <input
+                className={styles.timeInput}
+                type="time"
+                value={endTime}
+                aria-label="終了時刻"
+                onChange={(changeEvent) => setEndTime(changeEvent.target.value)}
+              />
+            ) : null}
+          </div>
         </div>
         <div className={styles.allDay}>
           <Toggle isOn={isAllDay} onChange={setIsAllDay} label="終日" size="sm" ariaLabel="終日" />
@@ -149,16 +217,12 @@ export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProp
         </div>
       </div>
 
-      <div>
-        <span className={styles.fieldLabel}>場所</span>
-        <button type="button" className={styles.location}>
-          <span className={styles.locationIcon}>
-            <Icon name="map" size={17} />
-          </span>
-          鴨川 三条
-          <span className={styles.spotBadge}>地図のスポット</span>
-        </button>
-      </div>
+      <TextField
+        label="場所"
+        value={location}
+        placeholder="鴨川 三条"
+        onChange={(changeEvent) => setLocation(changeEvent.target.value)}
+      />
     </Modal>
   );
 }

@@ -166,6 +166,142 @@ export async function createTransaction(
   };
 }
 
+/** 取引を更新する(MON-22 の編集)。 */
+export async function updateTransaction(
+  client: RecodockClient,
+  transactionId: string,
+  input: Partial<Omit<CreateTransactionInput, 'ledgerId'>>,
+): Promise<void> {
+  unwrapVoid(
+    await client
+      .from('transactions')
+      .update({
+        ...(input.kind !== undefined && { kind: input.kind }),
+        ...(input.amount !== undefined && { amount: input.amount }),
+        ...(input.occurredOn !== undefined && { occurred_on: input.occurredOn }),
+        ...(input.accountId !== undefined && { account_id: input.accountId }),
+        ...(input.transferAccountId !== undefined && {
+          transfer_account_id: input.transferAccountId,
+        }),
+        ...(input.categoryId !== undefined && { category_id: input.categoryId }),
+        ...(input.memo !== undefined && { memo: input.memo }),
+      })
+      .eq('id', transactionId),
+  );
+}
+
+/** 口座を作成する(MON-24)。 */
+export async function createAccount(
+  client: RecodockClient,
+  userId: string,
+  ledgerId: string,
+  input: { name: string; kind: AccountRecord['kind']; initialBalance: number },
+): Promise<void> {
+  unwrapVoid(
+    await client.from('accounts').insert({
+      user_id: userId,
+      ledger_id: ledgerId,
+      name: input.name,
+      kind: input.kind,
+      initial_balance: input.initialBalance,
+    }),
+  );
+}
+
+/** 口座を更新する(MON-24。名称・種別・開始残高・アーカイブ)。 */
+export async function updateAccount(
+  client: RecodockClient,
+  accountId: string,
+  input: Partial<{
+    name: string;
+    kind: AccountRecord['kind'];
+    initialBalance: number;
+    isArchived: boolean;
+  }>,
+): Promise<void> {
+  unwrapVoid(
+    await client
+      .from('accounts')
+      .update({
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.kind !== undefined && { kind: input.kind }),
+        ...(input.initialBalance !== undefined && { initial_balance: input.initialBalance }),
+        ...(input.isArchived !== undefined && { is_archived: input.isArchived }),
+      })
+      .eq('id', accountId),
+  );
+}
+
+/** カテゴリを作成する(MON-25。ユーザー定義)。 */
+export async function createCategory(
+  client: RecodockClient,
+  userId: string,
+  ledgerId: string,
+  input: { name: string; kind: CategoryRecord['kind']; sortOrder: number },
+): Promise<void> {
+  unwrapVoid(
+    await client.from('categories').insert({
+      user_id: userId,
+      ledger_id: ledgerId,
+      name: input.name,
+      kind: input.kind,
+      is_preset: false,
+      sort_order: input.sortOrder,
+    }),
+  );
+}
+
+/** カテゴリ名を変更する(MON-25)。 */
+export async function renameCategory(
+  client: RecodockClient,
+  categoryId: string,
+  name: string,
+): Promise<void> {
+  unwrapVoid(await client.from('categories').update({ name }).eq('id', categoryId));
+}
+
+/** カテゴリの表示順を保存する(MON-25)。 */
+export async function reorderCategories(
+  client: RecodockClient,
+  categoryIds: readonly string[],
+): Promise<void> {
+  for (const [index, categoryId] of categoryIds.entries()) {
+    unwrapVoid(await client.from('categories').update({ sort_order: index }).eq('id', categoryId));
+  }
+}
+
+/** カテゴリを削除する(MON-25。取引から参照中は FK 違反 → validation)。 */
+export async function removeCategory(client: RecodockClient, categoryId: string): Promise<void> {
+  unwrapVoid(await client.from('categories').delete().eq('id', categoryId));
+}
+
+/** 予算を保存する(MON-26)。同じ月×カテゴリがあれば上書きする。 */
+export async function upsertBudget(
+  client: RecodockClient,
+  userId: string,
+  ledgerId: string,
+  input: { month: string; categoryId: string | null; amount: number },
+): Promise<void> {
+  // UNIQUE(ledger_id, month, category_id) に合わせて既存行を消してから入れ直す
+  // (category_id が NULL の行は onConflict で突き合わせられないため)
+  let removal = client.from('budgets').delete().eq('ledger_id', ledgerId).eq('month', input.month);
+  removal =
+    input.categoryId === null
+      ? removal.is('category_id', null)
+      : removal.eq('category_id', input.categoryId);
+  unwrapVoid(await removal);
+
+  unwrapVoid(
+    await client.from('budgets').insert({
+      user_id: userId,
+      ledger_id: ledgerId,
+      month: input.month,
+      category_id: input.categoryId,
+      amount: input.amount,
+    }),
+  );
+}
+
 /** 取引を削除する。 */
 export async function removeTransaction(
   client: RecodockClient,

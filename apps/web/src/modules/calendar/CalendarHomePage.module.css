@@ -303,3 +303,85 @@
     font-size: var(--font-size-xl);
   }
 }
+
+/* ─────────── 週表示(選択日を含む 7 日) ─────────── */
+.weekGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  padding-bottom: var(--space-6);
+}
+
+/* ─────────── 日表示(その日の記録セクション) ─────────── */
+.dayView {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: var(--space-6);
+}
+
+.daySection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.daySectionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--tone-solid);
+}
+
+.dayRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 13px var(--space-4);
+  box-shadow: var(--shadow-card-sm);
+  text-align: left;
+}
+
+.dayRow:hover {
+  border-color: var(--color-ink);
+}
+
+.dayRowLead {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.dayRowTitle {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.dayRowSub {
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-muted);
+}
+
+.detailActions {
+  margin-top: var(--space-2);
+}
+
+/* 予定チップは押せる(CAL-11 詳細へ) */
+.event {
+  text-align: left;
+  width: 100%;
+}
+
+.event:hover {
+  filter: brightness(0.96);
+}

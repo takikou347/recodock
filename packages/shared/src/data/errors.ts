@@ -1,9 +1,12 @@
 // PostgREST のエラー形式を UI 層に漏らさないための変換(03_api_design.md 4.1)。
 // リポジトリ関数はここで AppError に変換してから投げる。
 
-/** アプリ全体で扱うエラーコード。UI はこのコードで文言を出し分ける。 */
-export type AppErrorCode =
-  'unauthorized' | 'forbidden' | 'not_found' | 'conflict' | 'validation' | 'network' | 'unknown';
+/**
+ * アプリ全体で扱うエラーコード(03_api_design.md 4.1 の変換規約)。
+ * unauthorized: RLS 違反・権限なし ／ validation: CHECK・UNIQUE 制約違反 ／
+ * offline: ネットワーク断 ／ not_found: 対象 0 件 ／ unknown: その他
+ */
+export type AppErrorCode = 'unauthorized' | 'validation' | 'offline' | 'not_found' | 'unknown';
 
 export class AppError extends Error {
   readonly code: AppErrorCode;
@@ -26,16 +29,14 @@ interface PostgrestErrorLike {
 
 const MESSAGES: Readonly<Record<AppErrorCode, string>> = {
   unauthorized: 'ログインが必要です',
-  forbidden: 'この操作を行う権限がありません',
-  not_found: '対象が見つかりませんでした',
-  conflict: 'すでに登録されています',
   validation: '入力内容を確認してください',
-  network: '通信に失敗しました。接続を確認してください',
+  offline: '通信に失敗しました。接続を確認してください',
+  not_found: '対象が見つかりませんでした',
   unknown: '処理に失敗しました',
 };
 
 /**
- * PostgREST のエラーコードを AppError に写す。
+ * PostgREST のエラーコードを AppError に写す(03_api_design.md 4.1)。
  * 参考: 23505=一意制約, 23514=CHECK 制約, 23503=外部キー, 42501=権限(RLS), PGRST116=0件。
  */
 export function toAppError(error: unknown): AppError {
@@ -46,11 +47,9 @@ export function toAppError(error: unknown): AppError {
 
   let appCode: AppErrorCode = 'unknown';
   if (code === 'PGRST116') appCode = 'not_found';
-  else if (code === '23505') appCode = 'conflict';
-  else if (code === '23514' || code === '23503' || code === '23502') appCode = 'validation';
-  else if (code === '42501') appCode = 'forbidden';
-  else if (code === 'PGRST301' || code === '401') appCode = 'unauthorized';
-  else if (error instanceof TypeError) appCode = 'network';
+  else if (code?.startsWith('23')) appCode = 'validation';
+  else if (code === '42501' || code === 'PGRST301' || code === '401') appCode = 'unauthorized';
+  else if (error instanceof TypeError) appCode = 'offline';
 
   return new AppError(appCode, MESSAGES[appCode], error);
 }

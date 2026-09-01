@@ -1,0 +1,62 @@
+/* CAL-11 予定詳細。内容とリマインド設定を確認し、編集・削除へ分岐する。 */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border-faint);
+  padding-bottom: 10px;
+}
+
+.rowLabel {
+  width: 96px;
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-subtle);
+}
+
+.rowValue {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.repeatBadge {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-calendar-bg);
+  color: var(--color-calendar-fg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.deleteChoice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: var(--border-width) dashed var(--color-border-dashed);
+  background: var(--color-bg);
+}
+
+.deleteChoiceLabel {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.deleteChoiceButtons {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

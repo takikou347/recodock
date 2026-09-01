@@ -8,6 +8,7 @@ import {
   itemsRepo,
   moneyRepo,
   notesRepo,
+  spotsRepo,
   userModulesRepo,
 } from '@recodock/shared';
 
@@ -77,6 +78,9 @@ describe('予定作成(CAL-12): FAB から予定を保存する', () => {
 
     const dialog = await screen.findByRole('dialog', { name: '予定を作成' });
     await user.type(within(dialog).getByLabelText('タイトル'), '読書会');
+    // 既定は「繰り返さない」。毎週(土曜)を明示的に選ぶ
+    await user.click(within(dialog).getByRole('button', { name: '繰り返し' }));
+    await user.click(within(dialog).getByRole('option', { name: /毎週/ }));
     await user.click(within(dialog).getByRole('button', { name: '保存する' }));
 
     await waitFor(() => expect(eventsRepo.create).toHaveBeenCalled());
@@ -251,18 +255,42 @@ describe('横断検索(SC-07): 全モジュールを1本の入力で探す', () 
 });
 
 describe('持ち物・メモ', () => {
-  it('持ち物を追加すると items に登録される(ITM-51)', async () => {
+  it('持ち物を全項目つきで追加できる(ITM-52)', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderApp({ route: '/items' });
 
     await user.click(await screen.findByRole('button', { name: /持ち物を追加/ }));
     const dialog = await screen.findByRole('dialog', { name: '持ち物を追加' });
-    await user.type(within(dialog).getByLabelText('持ち物の名前'), '炊飯器');
+    await user.type(within(dialog).getByLabelText('名称'), '炊飯器');
+    await user.type(within(dialog).getByLabelText('カテゴリ'), '家電');
+    await user.type(within(dialog).getByLabelText('保管場所'), 'キッチン');
     await user.click(within(dialog).getByRole('button', { name: '保存する' }));
 
     await waitFor(() => expect(itemsRepo.create).toHaveBeenCalled());
     const [, , input] = vi.mocked(itemsRepo.create).mock.calls[0] ?? [];
-    expect(input).toMatchObject({ name: '炊飯器' });
+    expect(input).toMatchObject({ name: '炊飯器', category: '家電', location: 'キッチン' });
+  });
+
+  it('持ち物カードを開くと詳細(ITM-51)が出て、編集へ進める', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/items' });
+
+    await user.click(await screen.findByText('加湿器'));
+    const detail = await screen.findByRole('dialog', { name: '加湿器' });
+    expect(within(detail).getByText('押入れ')).toBeInTheDocument();
+
+    await user.click(within(detail).getByRole('button', { name: '編集' }));
+    const editor = await screen.findByRole('dialog', { name: '持ち物を編集' });
+    expect(within(editor).getByLabelText('名称')).toHaveValue('加湿器');
+
+    await user.clear(within(editor).getByLabelText('名称'));
+    await user.type(within(editor).getByLabelText('名称'), '加湿器(寝室)');
+    await user.click(within(editor).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(itemsRepo.update).toHaveBeenCalled());
+    const [, itemId, input] = vi.mocked(itemsRepo.update).mock.calls[0] ?? [];
+    expect(itemId).toBe('item-1');
+    expect(input).toMatchObject({ name: '加湿器(寝室)' });
   });
 
   it('メモはピン留めとそれ以外に分かれて出る(MEM-60)', async () => {
@@ -285,5 +313,210 @@ describe('持ち物・メモ', () => {
     await waitFor(() => expect(notesRepo.create).toHaveBeenCalled());
     const [, , input] = vi.mocked(notesRepo.create).mock.calls[0] ?? [];
     expect(input).toMatchObject({ title: '週次ふりかえり' });
+  });
+});
+
+describe('予定詳細(CAL-11): 確認・編集・削除の分岐', () => {
+  it('予定チップをクリックすると詳細が開き、リマインド設定が見える', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/' });
+
+    await user.click((await screen.findAllByRole('button', { name: /散歩/ }))[0] as HTMLElement);
+
+    const dialog = await screen.findByRole('dialog', { name: '散歩' });
+    expect(within(dialog).getByText('鴨川 三条')).toBeInTheDocument();
+    expect(within(dialog).getByText('30分前')).toBeInTheDocument();
+  });
+
+  it('単発の予定は削除するとそのまま消える', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/' });
+
+    await user.click((await screen.findAllByRole('button', { name: /散歩/ }))[0] as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: '散歩' });
+    await user.click(within(dialog).getByRole('button', { name: '削除' }));
+
+    await waitFor(() =>
+      expect(eventsRepo.remove).toHaveBeenCalledWith(expect.anything(), 'event-1'),
+    );
+    expect(eventsRepo.cancelOccurrence).not.toHaveBeenCalled();
+  });
+
+  it('繰り返しの予定は「この回のみ/すべての回」を選べる(CAL-01)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/' });
+
+    // 8/22 の読書会(毎週土曜の1回)を開く
+    await user.click((await screen.findAllByRole('button', { name: /読書会/ }))[3] as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: '読書会' });
+    await user.click(within(dialog).getByRole('button', { name: '削除' }));
+
+    // 分岐が出る。この回のみ → event_overrides に取り消し行
+    const choice = await within(dialog).findByRole('group', { name: '削除の範囲' });
+    await user.click(within(choice).getByRole('button', { name: 'この回のみ' }));
+
+    await waitFor(() => expect(eventsRepo.cancelOccurrence).toHaveBeenCalledTimes(1));
+    expect(eventsRepo.remove).not.toHaveBeenCalled();
+  });
+
+  it('詳細から編集を開くとフォームに値が入っている(CAL-12 編集)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/' });
+
+    await user.click((await screen.findAllByRole('button', { name: /散歩/ }))[0] as HTMLElement);
+    const detail = await screen.findByRole('dialog', { name: '散歩' });
+    await user.click(within(detail).getByRole('button', { name: '編集' }));
+
+    const editor = await screen.findByRole('dialog', { name: '予定を編集' });
+    expect(within(editor).getByLabelText('タイトル')).toHaveValue('散歩');
+    expect(within(editor).getByLabelText('場所')).toHaveValue('鴨川 三条');
+
+    await user.clear(within(editor).getByLabelText('タイトル'));
+    await user.type(within(editor).getByLabelText('タイトル'), '夕方の散歩');
+    await user.click(within(editor).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(eventsRepo.update).toHaveBeenCalled());
+    const [, eventId, input] = vi.mocked(eventsRepo.update).mock.calls[0] ?? [];
+    expect(eventId).toBe('event-1');
+    expect(input).toMatchObject({ title: '夕方の散歩' });
+  });
+});
+
+describe('家計簿の管理画面(MON-23〜26)', () => {
+  it('口座一覧に「開始残高＋取引の積み上げ」の残高が出る(MON-02)', async () => {
+    renderApp({ route: '/money/accounts' });
+
+    // 三菱UFJ: 100,000 + 収入280,000 − 支出1,280 = 378,720
+    expect(await screen.findByText('¥378,720')).toBeInTheDocument();
+    // 総残高 = 378,720 + 現金 20,000
+    expect(screen.getByText('¥398,720')).toBeInTheDocument();
+  });
+
+  it('口座を追加すると accounts に登録される(MON-24)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/money/accounts' });
+
+    await user.click(await screen.findByRole('button', { name: /口座を追加/ }));
+    const dialog = await screen.findByRole('dialog', { name: '口座を追加' });
+    await user.type(within(dialog).getByLabelText('口座名'), '楽天カード');
+    await user.click(within(dialog).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(moneyRepo.createAccount).toHaveBeenCalledTimes(1));
+    const [, , , input] = vi.mocked(moneyRepo.createAccount).mock.calls[0] ?? [];
+    expect(input).toMatchObject({ name: '楽天カード', kind: 'bank' });
+  });
+
+  it('カテゴリを追加すると categories に登録される(MON-25)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/money/categories' });
+
+    await user.type(await screen.findByLabelText('新しいカテゴリ'), 'サブスク');
+    await user.click(screen.getByRole('button', { name: '追加' }));
+
+    await waitFor(() => expect(moneyRepo.createCategory).toHaveBeenCalledTimes(1));
+    const [, , , input] = vi.mocked(moneyRepo.createCategory).mock.calls[0] ?? [];
+    expect(input).toMatchObject({ name: 'サブスク', kind: 'expense' });
+  });
+
+  it('予算を保存すると budgets に月初日の行として入り、消化率が出る(MON-26)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/money/budgets' });
+
+    // 既存予算 250,000 / 支出 1,280 → 消化率 1%
+    expect(await screen.findByText(/消化率 1%/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('月の予算(帳簿全体)'), '300000');
+    await user.click(screen.getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(moneyRepo.upsertBudget).toHaveBeenCalledTimes(1));
+    const [, , , input] = vi.mocked(moneyRepo.upsertBudget).mock.calls[0] ?? [];
+    expect(input).toMatchObject({ month: '2026-08-01', categoryId: null, amount: 300000 });
+  });
+
+  it('取引行をクリックすると編集モーダルが開き、更新できる(MON-22 編集)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/money' });
+
+    await user.click(await screen.findByText('スーパーで買い物'));
+    const dialog = await screen.findByRole('dialog', { name: '取引を編集' });
+    expect(within(dialog).getByLabelText('金額')).toHaveValue(1280);
+
+    await user.clear(within(dialog).getByLabelText('金額'));
+    await user.type(within(dialog).getByLabelText('金額'), '1480');
+    await user.click(within(dialog).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(moneyRepo.updateTransaction).toHaveBeenCalled());
+    const [, transactionId, input] = vi.mocked(moneyRepo.updateTransaction).mock.calls[0] ?? [];
+    expect(transactionId).toBe('tx-1');
+    expect(input).toMatchObject({ amount: 1480 });
+  });
+
+  it('口座で絞り込むと他口座の取引が消える(MON-21)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/money' });
+
+    expect(await screen.findByText('スーパーで買い物')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('口座で絞り込み'), 'account-2');
+
+    await waitFor(() => expect(screen.queryByText('スーパーで買い物')).not.toBeInTheDocument());
+  });
+});
+
+describe('メモ編集(MEM-61)とスポット(MAP-71/72)', () => {
+  it('メモをクリックするとエディタが開き、編集すると自動保存される', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/notes' });
+
+    await user.click(await screen.findByText('鴨川で読む本リスト'));
+    const title = await screen.findByLabelText('メモのタイトル');
+    expect(title).toHaveValue('鴨川で読む本リスト');
+
+    await user.type(screen.getByLabelText('メモの本文'), ' 追記');
+    // 自動保存のデバウンスを進める
+    await vi.advanceTimersByTimeAsync(1500);
+
+    await waitFor(() => expect(notesRepo.update).toHaveBeenCalled());
+    const [, noteId, input] = vi.mocked(notesRepo.update).mock.calls[0] ?? [];
+    expect(noteId).toBe('note-1');
+    expect(String(input?.body)).toContain('追記');
+  });
+
+  it('チェックリストボタンで行頭に - [ ] が入る(MEM-03)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/notes/note-1' });
+
+    await screen.findByLabelText('メモのタイトル');
+    const body = screen.getByLabelText('メモの本文') as HTMLTextAreaElement;
+    // 1行目にカーソルを置いてから挿入する
+    body.setSelectionRange(0, 0);
+    await user.click(screen.getByRole('button', { name: 'チェックリスト' }));
+
+    expect(body.value.startsWith('- [ ] ')).toBe(true);
+  });
+
+  it('スポットを追加すると spots に登録される(MAP-72)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/map' });
+
+    await user.click(await screen.findByRole('button', { name: /スポットを追加/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'スポットを追加' });
+    await user.type(within(dialog).getByLabelText('場所名'), '出町柳デルタ');
+    await user.click(within(dialog).getByRole('radio', { name: '行きたい' }));
+    await user.click(within(dialog).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(spotsRepo.create).toHaveBeenCalled());
+    const [, , input] = vi.mocked(spotsRepo.create).mock.calls[0] ?? [];
+    // 「行きたい」は訪問日を持たない(02_data_model.md 3.7)
+    expect(input).toMatchObject({ name: '出町柳デルタ', status: 'wishlist', visitedOn: null });
+  });
+
+  it('スポット詳細(MAP-71)に関連日記への導線が出る', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/map' });
+
+    await user.click(await screen.findByRole('button', { name: '詳細' }));
+    const dialog = await screen.findByRole('dialog', { name: '鴨川 三条' });
+    expect(within(dialog).getByText('関連日記')).toBeInTheDocument();
+    expect(await within(dialog).findByText(/夏のはじまり、川沿いを歩いた/)).toBeInTheDocument();
   });
 });

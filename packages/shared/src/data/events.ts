@@ -121,6 +121,54 @@ export async function remove(client: RecodockClient, eventId: string): Promise<v
   unwrapVoid(await client.from('events').delete().eq('id', eventId));
 }
 
+/** 繰り返しの例外(この回だけ削除: CAL-01)。occurrenceIso は元の発生日時。 */
+export async function cancelOccurrence(
+  client: RecodockClient,
+  userId: string,
+  eventId: string,
+  occurrenceIso: string,
+): Promise<void> {
+  unwrapVoid(
+    await client.from('event_overrides').upsert(
+      {
+        user_id: userId,
+        event_id: eventId,
+        occurrence_date: occurrenceIso,
+        is_canceled: true,
+      },
+      { onConflict: 'event_id,occurrence_date' },
+    ),
+  );
+}
+
+/** 取り消し済みの発生日時一覧を取得する(展開時の除外に使う)。 */
+export async function listCanceledOccurrences(
+  client: RecodockClient,
+  fromIso: string,
+  toIso: string,
+): Promise<{ eventId: string; occurrenceIso: string }[]> {
+  const result = await client
+    .from('event_overrides')
+    .select('event_id, occurrence_date')
+    .eq('is_canceled', true)
+    .gte('occurrence_date', fromIso)
+    .lt('occurrence_date', toIso);
+  return unwrap(result).map((row) => ({
+    eventId: row.event_id,
+    occurrenceIso: row.occurrence_date,
+  }));
+}
+
+/** 予定のリマインド設定(分前)を取得する(CAL-11)。 */
+export async function listReminders(client: RecodockClient, eventId: string): Promise<number[]> {
+  const result = await client
+    .from('event_reminders')
+    .select('minutes_before')
+    .eq('event_id', eventId)
+    .order('minutes_before');
+  return unwrap(result).map((row) => row.minutes_before);
+}
+
 /** 予定のリマインド(分前)を置き換える(CAL-14)。 */
 export async function replaceReminders(
   client: RecodockClient,

@@ -5,7 +5,7 @@ import { formatDateValue, itemsRepo, queryKeys } from '@recodock/shared';
 
 import { supabase } from '../../lib/supabase';
 
-/** ITM-50 の 1 件。 */
+/** ITM-50 の 1 件。raw は ITM-51 詳細 / ITM-52 編集への受け渡しに使う。 */
 export interface Item {
   id: string;
   name: string;
@@ -13,6 +13,7 @@ export interface Item {
   badge: string;
   /** 保証期限が近いなど注意を促すバッジか */
   isWarning: boolean;
+  raw: ItemRecord;
 }
 
 /** 保証期限がこの日数以内なら注意表示にする(ITM-52)。 */
@@ -47,8 +48,8 @@ function toBadge(record: ItemRecord, today: Date): { badge: string; isWarning: b
   return { badge: '登録済み', isWarning: false };
 }
 
-/** 持ち物一覧を返す(ITM-50)。category が 'all' 以外ならその分類で絞り込む。 */
-export function useItems(category: string): ItemsResult {
+/** 持ち物一覧を返す(ITM-50)。分類・キーワード(名称/タグ: ITM-02)で絞り込む。 */
+export function useItems(category: string, keyword = ''): ItemsResult {
   const query = useQuery({
     queryKey: queryKeys.items.list('all'),
     queryFn: () => itemsRepo.list(supabase),
@@ -65,15 +66,25 @@ export function useItems(category: string): ItemsResult {
       category: record.category ?? '未分類',
       badge,
       isWarning,
+      raw: record,
     };
   });
 
-  const items =
-    category === 'all'
-      ? decorated
-      : category === 'warning'
-        ? decorated.filter((item) => item.isWarning)
-        : decorated.filter((item) => item.category === category);
+  const trimmedKeyword = keyword.trim();
+  const items = decorated
+    .filter((item) => {
+      if (category === 'all') return true;
+      if (category === 'warning') return item.isWarning;
+      return item.category === category;
+    })
+    .filter((item) => {
+      if (!trimmedKeyword) return true;
+      return (
+        item.name.includes(trimmedKeyword) ||
+        item.raw.tags.some((tag) => tag.includes(trimmedKeyword)) ||
+        (item.raw.location ?? '').includes(trimmedKeyword)
+      );
+    });
 
   // 分類チップは実データから組み立てる
   const countByCategory = new Map<string, number>();
@@ -96,13 +107,14 @@ export function useItems(category: string): ItemsResult {
   };
 }
 
-/** 持ち物を追加する(ITM-51)。 */
-export function useCreateItem(userId: string | undefined) {
+/** 持ち物を作成・更新する(ITM-52)。 */
+export function useSaveItem(userId: string | undefined) {
   const queryClient = useQueryClient();
-  return useMutation<ItemRecord, Error, CreateItemInput>({
-    mutationFn: (input) => {
+  return useMutation<void, Error, { itemId?: string; input: CreateItemInput }>({
+    mutationFn: async ({ itemId, input }) => {
       if (!userId) throw new Error('ログインが必要です');
-      return itemsRepo.create(supabase, userId, input);
+      if (itemId) await itemsRepo.update(supabase, itemId, input);
+      else await itemsRepo.create(supabase, userId, input);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['items'] });

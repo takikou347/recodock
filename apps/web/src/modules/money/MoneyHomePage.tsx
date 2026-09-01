@@ -14,8 +14,13 @@ import { useToast } from '../../components/Toast';
 import { shiftMonth } from '../../lib/calendarGrid';
 import { moduleThemeClass } from '../../lib/moduleTheme';
 import { TransactionCreateModal } from './TransactionCreateModal';
-import type { TransactionFilter } from './useMoneySummary';
-import { buildDonutGradient, useMoneySummary } from './useMoneySummary';
+import type { Transaction, TransactionFilters } from './useMoneySummary';
+import {
+  buildDonutGradient,
+  useMoneyAccounts,
+  useMoneyCategories,
+  useMoneySummary,
+} from './useMoneySummary';
 
 import layout from '../../core/pageLayout.module.css';
 import styles from './MoneyHomePage.module.css';
@@ -31,7 +36,12 @@ export function MoneyHomePage() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [filter, setFilter] = useState<TransactionFilter>('all');
+  const [filters, setFilters] = useState<TransactionFilters>({
+    kind: 'all',
+    accountId: 'all',
+    categoryId: 'all',
+  });
+  const [editTarget, setEditTarget] = useState<Transaction>();
   const {
     stats,
     categories,
@@ -42,7 +52,7 @@ export function MoneyHomePage() {
     isLoading,
     isError,
     refetch,
-  } = useMoneySummary(month, filter);
+  } = useMoneySummary(month, filters);
 
   const donutStyle: CSSProperties = {
     '--donut-gradient': buildDonutGradient(categories),
@@ -168,24 +178,29 @@ export function MoneyHomePage() {
           <Card isFlush className={styles.txnCard}>
             <div className={styles.txnHead}>
               <h2 className={styles.cardTitle}>取引一覧</h2>
-              <Chip isSelected={filter === 'all'} size="sm" onClick={() => setFilter('all')}>
+              <Chip
+                isSelected={filters.kind === 'all'}
+                size="sm"
+                onClick={() => setFilters((current) => ({ ...current, kind: 'all' }))}
+              >
                 すべて
               </Chip>
               <Chip
                 tone="money"
                 size="sm"
-                isSelected={filter === 'expense'}
-                onClick={() => setFilter('expense')}
+                isSelected={filters.kind === 'expense'}
+                onClick={() => setFilters((current) => ({ ...current, kind: 'expense' }))}
               >
                 支出
               </Chip>
               <Chip
                 size="sm"
-                isSelected={filter === 'transfer'}
-                onClick={() => setFilter('transfer')}
+                isSelected={filters.kind === 'transfer'}
+                onClick={() => setFilters((current) => ({ ...current, kind: 'transfer' }))}
               >
                 振替
               </Chip>
+              <TransactionFilterSelects filters={filters} onChange={setFilters} />
               <span className={styles.txnCount}>{totalCount.toLocaleString('ja-JP')} 件</span>
             </div>
 
@@ -233,6 +248,7 @@ export function MoneyHomePage() {
                         type="button"
                         className={styles.txnRow}
                         style={toneStyle}
+                        onClick={() => setEditTarget(transaction)}
                       >
                         <span className={styles.txnDate}>{transaction.date}</span>
                         <span className={styles.txnCategory}>{transaction.category}</span>
@@ -264,6 +280,54 @@ export function MoneyHomePage() {
       </div>
 
       <TransactionCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+      <TransactionCreateModal
+        isOpen={Boolean(editTarget)}
+        transaction={editTarget?.raw}
+        onClose={() => setEditTarget(undefined)}
+      />
     </div>
+  );
+}
+
+interface TransactionFilterSelectsProps {
+  filters: TransactionFilters;
+  onChange: (update: (current: TransactionFilters) => TransactionFilters) => void;
+}
+
+/** MON-21 の口座・カテゴリ絞り込み。 */
+function TransactionFilterSelects({ filters, onChange }: TransactionFilterSelectsProps) {
+  const { accounts } = useMoneyAccounts();
+  const { categories } = useMoneyCategories();
+  return (
+    <span className={styles.filterSelects}>
+      <select
+        className={styles.filterSelect}
+        aria-label="口座で絞り込み"
+        value={filters.accountId}
+        onChange={(event) => onChange((current) => ({ ...current, accountId: event.target.value }))}
+      >
+        <option value="all">口座: すべて</option>
+        {accounts.map((account) => (
+          <option key={account.id} value={account.id}>
+            {account.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.filterSelect}
+        aria-label="カテゴリで絞り込み"
+        value={filters.categoryId}
+        onChange={(event) =>
+          onChange((current) => ({ ...current, categoryId: event.target.value }))
+        }
+      >
+        <option value="all">カテゴリ: すべて</option>
+        {categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }

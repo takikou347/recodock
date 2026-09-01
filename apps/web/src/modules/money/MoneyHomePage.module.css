@@ -348,3 +348,18 @@
     font-size: var(--font-size-md);
   }
 }
+
+/* MON-21 の口座・カテゴリ絞り込み */
+.filterSelects {
+  display: flex;
+  gap: 6px;
+}
+
+.filterSelect {
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}

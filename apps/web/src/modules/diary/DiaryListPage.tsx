@@ -9,9 +9,16 @@ import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/icons/Icon';
 import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
+import { useAuth } from '../../core/auth';
 import { moduleThemeClass } from '../../lib/moduleTheme';
 import type { DiaryBlock, DiarySummary } from './useDiaries';
-import { useDeleteDiary, useDiaries, useDiary } from './useDiaries';
+import {
+  useCreateDiary,
+  useDeleteDiary,
+  useDiaries,
+  useDiary,
+  useDiaryOneYearAgo,
+} from './useDiaries';
 
 import styles from './DiaryListPage.module.css';
 
@@ -23,12 +30,24 @@ export function DiaryListPage() {
   const navigate = useNavigate();
   const { diaryId } = useParams();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const { diaries, isLoading, isError } = useDiaries(keyword);
   const selected = useDiary(diaryId ?? diaries[0]?.id);
   const deleteDiary = useDeleteDiary();
+  const createDiary = useCreateDiary(user?.id);
+  const oneYearAgo = useDiaryOneYearAgo(new Date());
+
+  const onCreate = async () => {
+    const now = new Date();
+    const entryDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate(),
+    ).padStart(2, '0')}`;
+    const created = await createDiary.mutateAsync({ entryDate, body: '' });
+    navigate(`/diary/${created.id}/edit`);
+  };
 
   const onDelete = async () => {
     if (!selected) return;
@@ -42,7 +61,21 @@ export function DiaryListPage() {
     <div className={[styles.root, moduleThemeClass('diary')].join(' ')}>
       <div className={styles.listPane}>
         <div className={styles.listHead}>
-          <h1 className={styles.listTitle}>日記</h1>
+          <div className={styles.listTitleRow}>
+            <h1 className={styles.listTitle}>日記</h1>
+            <Button variant="primary" size="sm" icon="plus" onClick={() => void onCreate()}>
+              新規日記
+            </Button>
+          </div>
+          {oneYearAgo ? (
+            <button
+              type="button"
+              className={styles.oneYearAgo}
+              onClick={() => navigate(`/diary/${oneYearAgo.id}`)}
+            >
+              1年前の今日: {oneYearAgo.title}
+            </button>
+          ) : null}
           <div className={styles.searchBox}>
             <Icon name="search" size={16} />
             <input
