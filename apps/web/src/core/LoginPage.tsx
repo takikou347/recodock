@@ -20,7 +20,7 @@ interface LoginLocationState {
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -47,22 +47,6 @@ export function LoginPage() {
       navigate(from, { replace: true });
     } catch (error) {
       setErrorText(error instanceof AppError ? error.message : 'ログインに失敗しました');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onSignUp = async () => {
-    if (!email || !password) {
-      setErrorText('メールアドレスとパスワードを入力してください');
-      return;
-    }
-    setErrorText(undefined);
-    setIsSubmitting(true);
-    try {
-      await signUp(email, password);
-    } catch (error) {
-      setErrorText(error instanceof AppError ? error.message : '登録に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,7 +88,11 @@ export function LoginPage() {
 
         <TextField
           label="パスワード"
-          labelAside={<button type="button">お忘れですか？</button>}
+          labelAside={
+            <button type="button" onClick={() => navigate('/reset-password')}>
+              お忘れですか？
+            </button>
+          }
           type={isPasswordVisible ? 'text' : 'password'}
           autoComplete="current-password"
           value={password}
@@ -139,12 +127,7 @@ export function LoginPage() {
 
         <p className={styles.signup}>
           アカウントをお持ちでないですか？{' '}
-          <button
-            type="button"
-            className={styles.signupLink}
-            onClick={onSignUp}
-            disabled={isSubmitting}
-          >
+          <button type="button" className={styles.signupLink} onClick={() => navigate('/signup')}>
             新規登録
           </button>
         </p>

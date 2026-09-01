@@ -140,3 +140,14 @@
     display: none;
   }
 }
+
+/* 送信完了などの案内文 */
+.notice {
+  padding: 14px var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-money-bg);
+  border: var(--border-width) solid var(--color-money-line);
+  color: var(--color-money-fg);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+}

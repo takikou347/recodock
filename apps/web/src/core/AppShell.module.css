@@ -479,3 +479,11 @@
 .user:hover .signOut {
   color: var(--color-danger);
 }
+
+.secondaryNavItem {
+  color: var(--tone-fg);
+}
+
+.secondaryNavItem:hover {
+  text-decoration: underline;
+}
