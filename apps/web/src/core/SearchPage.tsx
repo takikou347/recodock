@@ -48,7 +48,7 @@ export function SearchPage() {
         <span className={styles.meta}>search_entries ビュー · {entries.length} 件</span>
       </div>
 
-      <div className={layout.filters}>
+      <div className={layout.filters} role="group" aria-label="モジュールで絞り込み">
         <Chip isSelected={filter === 'all'} onClick={() => setFilter('all')}>
           すべて
         </Chip>

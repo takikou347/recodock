@@ -1,20 +1,24 @@
-import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
-/** 地図に置くピン(MAP-70)。 */
+import type { SpotStatus as RepoSpotStatus } from '@recodock/shared';
+import { entriesRepo, formatDateValue, queryKeys, spotsRepo } from '@recodock/shared';
+
+import { supabase } from '../../lib/supabase';
+
+/** 地図に置くピン(MAP-70)。日記由来のピンも同じ形で扱う。 */
 export interface Spot {
   id: string;
   name: string;
-  /** 訪問日・関連記録のサマリ */
   summary: string;
   status: SpotStatus;
-  /** 地図上の位置(％)。実装時は緯度経度から求める */
+  /** 地図上の位置(％)。緯度経度を表示範囲へ正規化した値 */
   x: number;
   y: number;
-  /** そのスポットに紐づく記録の件数 */
   entryCount: number;
 }
 
-export type SpotStatus = 'visited' | 'wishlist' | 'diary';
+/** 表示上の状態。スポットの visited/wishlist に、日記由来のピンを足す。 */
+export type SpotStatus = RepoSpotStatus | 'diary';
 
 export interface SpotsResult {
   spots: readonly Spot[];
@@ -23,57 +27,93 @@ export interface SpotsResult {
   isError: boolean;
 }
 
-// TODO: spots / map_entries ビューを引くリポジトリ関数＋TanStack Query に差し替える。
-const SAMPLE_SPOTS: readonly Spot[] = [
-  {
-    id: 's1',
-    name: '鴨川 三条',
-    summary: '訪問 2026/08/21 ・ 日記 1件',
-    status: 'visited',
-    x: 18,
-    y: 10,
-    entryCount: 3,
-  },
-  { id: 's2', name: '出町柳', summary: '日記 1件', status: 'diary', x: 52, y: 22, entryCount: 1 },
-  {
-    id: 's3',
-    name: '鴨川デルタ',
-    summary: '行きたい ／ メモあり',
-    status: 'visited',
-    x: 30,
-    y: 38,
-    entryCount: 5,
-  },
-  {
-    id: 's4',
-    name: '京都市役所前',
-    summary: '予定 2件',
-    status: 'wishlist',
-    x: 68,
-    y: 46,
-    entryCount: 2,
-  },
-  {
-    id: 's5',
-    name: '四条大橋',
-    summary: '訪問 2026/07/30',
-    status: 'visited',
-    x: 44,
-    y: 58,
-    entryCount: 1,
-  },
-];
+/** ピンが端に貼り付かないよう内側に寄せる余白(％)。 */
+const PIN_INSET = 10;
 
-/** スポット一覧を返す(MAP-70)。status が 'all' 以外ならその状態で絞り込む。 */
+/**
+ * 緯度経度を表示範囲の 0〜100% に正規化する。
+ * 実際の地図タイルを敷くまでの暫定表示で、ピンの相対位置だけを保つ。
+ */
+function normalize(values: readonly number[]): (value: number) => number {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min;
+  if (!Number.isFinite(span) || span === 0) return () => 50;
+  return (value) => PIN_INSET + ((value - min) / span) * (100 - PIN_INSET * 2);
+}
+
+/** スポット一覧を返す(MAP-70)。status を渡すとその状態だけ返す。 */
 export function useSpots(status: SpotStatus | 'all'): SpotsResult {
-  return useMemo(() => {
-    const spots =
-      status === 'all' ? SAMPLE_SPOTS : SAMPLE_SPOTS.filter((spot) => spot.status === status);
-    return {
-      spots,
-      counts: { visited: 24, wishlist: 8, diary: 12 },
-      isLoading: false,
-      isError: false,
-    };
-  }, [status]);
+  const spotsQuery = useQuery({
+    queryKey: queryKeys.map.spots('all'),
+    queryFn: () => spotsRepo.list(supabase),
+  });
+
+  const entriesQuery = useQuery({
+    queryKey: queryKeys.map.spots('entries'),
+    queryFn: () => entriesRepo.listMapEntries(supabase),
+  });
+
+  const spotRecords = spotsQuery.data ?? [];
+  const mapEntries = entriesQuery.data ?? [];
+
+  // 同じスポットに紐づく記録の件数
+  const entryCounts = new Map<string, number>();
+  for (const entry of mapEntries) {
+    entryCounts.set(entry.entryId, (entryCounts.get(entry.entryId) ?? 0) + 1);
+  }
+
+  // 日記に直接付いた位置情報は、スポット登録が無くてもピンとして出す
+  const spotIds = new Set(spotRecords.map((spot) => spot.id));
+  const diaryPins = mapEntries.filter(
+    (entry) => entry.moduleKey === 'diary' && !spotIds.has(entry.entryId),
+  );
+
+  const latitudes = [
+    ...spotRecords.map((spot) => spot.latitude),
+    ...diaryPins.map((pin) => pin.latitude),
+  ];
+  const longitudes = [
+    ...spotRecords.map((spot) => spot.longitude),
+    ...diaryPins.map((pin) => pin.longitude),
+  ];
+  const toX = normalize(longitudes);
+  // 緯度は北が上なので上下を反転させる
+  const toY = normalize(latitudes);
+
+  const all: Spot[] = [
+    ...spotRecords.map((spot) => ({
+      id: spot.id,
+      name: spot.name,
+      summary: spot.visitedOn
+        ? `訪問 ${formatDateValue(new Date(`${spot.visitedOn}T00:00:00`))}`
+        : (spot.memo ?? '行きたい'),
+      status: spot.status as SpotStatus,
+      x: toX(spot.longitude),
+      y: 100 - toY(spot.latitude),
+      entryCount: entryCounts.get(spot.id) ?? 1,
+    })),
+    ...diaryPins.map((pin) => ({
+      id: pin.entryId,
+      name: pin.title,
+      summary: '日記の位置情報',
+      status: 'diary' as SpotStatus,
+      x: toX(pin.longitude),
+      y: 100 - toY(pin.latitude),
+      entryCount: 1,
+    })),
+  ];
+
+  const counts: Record<SpotStatus, number> = {
+    visited: all.filter((spot) => spot.status === 'visited').length,
+    wishlist: all.filter((spot) => spot.status === 'wishlist').length,
+    diary: all.filter((spot) => spot.status === 'diary').length,
+  };
+
+  return {
+    spots: status === 'all' ? all : all.filter((spot) => spot.status === status),
+    counts,
+    isLoading: spotsQuery.isPending || entriesQuery.isPending,
+    isError: spotsQuery.isError || entriesQuery.isError,
+  };
 }

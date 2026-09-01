@@ -463,3 +463,19 @@
 .secondaryNavItemActive {
   font-weight: var(--font-weight-bold);
 }
+
+/* サイドバー最下段のユーザー行(押すとログアウト) */
+.user {
+  width: 100%;
+  text-align: left;
+}
+
+.signOut {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-subtle);
+}
+
+.user:hover .signOut {
+  color: var(--color-danger);
+}

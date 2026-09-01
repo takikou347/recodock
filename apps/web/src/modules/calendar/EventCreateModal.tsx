@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { AppError } from '@recodock/shared';
+
 import { Button } from '../../components/Button';
 import { DatePicker } from '../../components/DatePicker';
 import { Icon } from '../../components/icons/Icon';
@@ -8,6 +10,9 @@ import { Select } from '../../components/Select';
 import { TextField } from '../../components/TextField';
 import { useToast } from '../../components/Toast';
 import { Toggle } from '../../components/Toggle';
+import { useAuth } from '../../core/auth';
+import { toDateKey } from '../../lib/monthRange';
+import { useCreateEvent } from './useCalendarEntries';
 
 import styles from './EventCreateModal.module.css';
 
@@ -26,6 +31,13 @@ const REMINDER_OPTIONS = [
 ] as const;
 
 type RecurrenceValue = (typeof RECURRENCE_OPTIONS)[number]['value'];
+
+/** 画面の選択肢を RFC 5545 の RRULE に写す(CAL-03)。 */
+const RRULE_BY_OPTION: Readonly<Record<Exclude<RecurrenceValue, 'none'>, string>> = {
+  weekly: 'FREQ=WEEKLY;BYDAY=SA',
+  monthly: 'FREQ=MONTHLY',
+  custom: 'FREQ=WEEKLY',
+};
 type ReminderValue = (typeof REMINDER_OPTIONS)[number]['value'];
 
 export interface EventCreateModalProps {
@@ -35,12 +47,11 @@ export interface EventCreateModalProps {
   onClose: () => void;
 }
 
-/**
- * CAL-12 予定作成。PC は画面中央モーダル、SP はボトムシート(1e オーバーレイ規則)。
- * TODO: events テーブルへの登録(リポジトリ関数＋mutation)を接続する。
- */
+/** CAL-12 予定作成。PC は画面中央モーダル、SP はボトムシート(1e オーバーレイ規則)。 */
 export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProps) {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const createEvent = useCreateEvent(user?.id);
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(date);
   const [endDate, setEndDate] = useState(date);
@@ -49,14 +60,30 @@ export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProp
   const [reminder, setReminder] = useState<ReminderValue>('30');
   const [titleError, setTitleError] = useState<string>();
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!title.trim()) {
       setTitleError('タイトルを入力してください');
       return;
     }
+    if (endDate < startDate) {
+      setTitleError('終了日は開始日以降にしてください');
+      return;
+    }
     setTitleError(undefined);
-    showToast({ message: '予定を保存しました' });
-    onClose();
+    try {
+      await createEvent.mutateAsync({
+        title: title.trim(),
+        startsAt: new Date(`${toDateKey(startDate)}T09:00:00`).toISOString(),
+        endsAt: new Date(`${toDateKey(endDate)}T10:00:00`).toISOString(),
+        isAllDay,
+        rrule: recurrence === 'none' ? null : RRULE_BY_OPTION[recurrence],
+      });
+      showToast({ message: '予定を保存しました' });
+      setTitle('');
+      onClose();
+    } catch (error) {
+      setTitleError(error instanceof AppError ? error.message : '保存に失敗しました');
+    }
   };
 
   return (
@@ -70,8 +97,8 @@ export function EventCreateModal({ isOpen, date, onClose }: EventCreateModalProp
           <Button variant="secondary" onClick={onClose}>
             キャンセル
           </Button>
-          <Button variant="primary" onClick={onSave}>
-            保存する
+          <Button variant="primary" onClick={() => void onSave()} disabled={createEvent.isPending}>
+            {createEvent.isPending ? '保存中…' : '保存する'}
           </Button>
         </>
       }

@@ -1,4 +1,18 @@
-import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import type { CreateTransactionInput, ModuleKey, TransactionRecord } from '@recodock/shared';
+import {
+  calcAccountBalance,
+  formatAmount,
+  formatListDate,
+  moneyRepo,
+  queryKeys,
+  summarizeByCategory,
+  summarizeTransactions,
+} from '@recodock/shared';
+
+import { monthDateRange, toBudgetMonth, toMonthKey } from '../../lib/monthRange';
+import { supabase } from '../../lib/supabase';
 
 /** MON-20 の集計カード。 */
 export interface MoneyStat {
@@ -6,8 +20,8 @@ export interface MoneyStat {
   label: string;
   value: string;
   sub: string;
-  /** 面の色に使うモジュールキー相当のトーン */
-  tone: 'money' | 'diary' | 'calendar' | 'notes';
+  /** 面の色に使うトーン */
+  tone: ModuleKey;
 }
 
 /** カテゴリ別支出(ドーナツと内訳)。 */
@@ -31,187 +45,252 @@ export interface TrendBar {
 /** MON-21 取引一覧の 1 行。 */
 export interface Transaction {
   id: string;
-  /** リスト内表記: 08/22 */
   date: string;
   category: string;
-  /** カテゴリバッジのトーン */
-  tone: 'money' | 'notes' | 'calendar' | 'items' | 'map' | 'diary';
+  tone: ModuleKey;
   memo: string;
   account: string;
   amount: string;
-  /** 収入は緑＋で表示する */
   isIncome: boolean;
 }
 
 export type TransactionFilter = 'all' | 'expense' | 'transfer';
+
+/** カテゴリ内訳に順番に当てる色(モジュールの淡色を流用する)。 */
+const CATEGORY_COLOR_VARS = [
+  'var(--color-diary-line)',
+  'var(--color-calendar-line)',
+  'var(--color-money-line)',
+  'var(--color-notes-line)',
+  'var(--color-items-line)',
+  'var(--color-map-line)',
+] as const;
+
+/** カテゴリバッジのトーンも同じ並びで割り当てる。 */
+const CATEGORY_TONES: readonly ModuleKey[] = [
+  'diary',
+  'calendar',
+  'money',
+  'notes',
+  'items',
+  'map',
+];
 
 export interface MoneySummaryResult {
   stats: readonly MoneyStat[];
   categories: readonly CategoryBreakdown[];
   trend: readonly TrendBar[];
   transactions: readonly Transaction[];
-  /** 全期間の取引件数 */
   totalCount: number;
-  /** ドーナツ中央に出す支出計 */
   expenseTotal: string;
   isLoading: boolean;
   isError: boolean;
+  refetch: () => void;
 }
 
-// TODO: transactions / budgets を引くリポジトリ関数＋TanStack Query に差し替える。
-// 集計は PostgREST の集計クエリまたはビューで行う(NFR-P2)。
-// 現在はデザイン(MON-20 / MON-21)のサンプルを表示する。
-const SAMPLE_TRANSACTIONS: readonly Transaction[] = [
-  {
-    id: 'tx1',
-    date: '08/22',
-    category: '食費',
-    tone: 'money',
-    memo: 'スーパーで買い物',
-    account: '三井住友カード',
-    amount: '-¥1,280',
-    isIncome: false,
-  },
-  {
-    id: 'tx2',
-    date: '08/22',
-    category: '趣味',
-    tone: 'notes',
-    memo: '文庫本 2冊',
-    account: '現金',
-    amount: '-¥1,540',
-    isIncome: false,
-  },
-  {
-    id: 'tx3',
-    date: '08/21',
-    category: '交通',
-    tone: 'calendar',
-    memo: '地下鉄 往復',
-    account: 'ICカード',
-    amount: '-¥560',
-    isIncome: false,
-  },
-  {
-    id: 'tx4',
-    date: '08/21',
-    category: '食費',
-    tone: 'money',
-    memo: 'アイスコーヒー',
-    account: '現金',
-    amount: '-¥480',
-    isIncome: false,
-  },
-  {
-    id: 'tx5',
-    date: '08/20',
-    category: '日用品',
-    tone: 'items',
-    memo: 'リネンシャツ',
-    account: '楽天カード',
-    amount: '-¥6,800',
-    isIncome: false,
-  },
-  {
-    id: 'tx6',
-    date: '08/20',
-    category: '振替',
-    tone: 'map',
-    memo: '銀行 → 現金',
-    account: '三菱UFJ',
-    amount: '¥30,000',
-    isIncome: false,
-  },
-  {
-    id: 'tx7',
-    date: '08/19',
-    category: '給与',
-    tone: 'money',
-    memo: '8月分 給与',
-    account: '三菱UFJ',
-    amount: '+¥280,000',
-    isIncome: true,
-  },
-  {
-    id: 'tx8',
-    date: '08/18',
-    category: '住居',
-    tone: 'calendar',
-    memo: '家賃',
-    account: '三菱UFJ',
-    amount: '-¥88,000',
-    isIncome: false,
-  },
-];
-
-const SAMPLE_CATEGORIES: readonly CategoryBreakdown[] = [
-  { id: 'c1', name: '食費', colorVar: 'var(--color-diary-line)', percentage: 32, amount: '58,400' },
-  {
-    id: 'c2',
-    name: '住居',
-    colorVar: 'var(--color-calendar-line)',
-    percentage: 24,
-    amount: '44,000',
-  },
-  { id: 'c3', name: '交通', colorVar: 'var(--color-money-line)', percentage: 18, amount: '32,800' },
-  { id: 'c4', name: '趣味', colorVar: 'var(--color-notes-line)', percentage: 14, amount: '25,600' },
-  {
-    id: 'c5',
-    name: 'その他',
-    colorVar: 'var(--color-items-line)',
-    percentage: 12,
-    amount: '21,600',
-  },
-];
-
-/** サンプルデータが対象とする月(2026年8月) */
-const SAMPLE_YEAR = 2026;
-const SAMPLE_MONTH_INDEX = 7;
+/** 直近6か月の推移に使う月の並び。 */
+function recentMonths(month: Date, count: number): Date[] {
+  return Array.from(
+    { length: count },
+    (_, index) => new Date(month.getFullYear(), month.getMonth() - (count - 1 - index), 1),
+  );
+}
 
 /** 月次サマリと取引一覧を返す(MON-20 / MON-21)。 */
 export function useMoneySummary(month: Date, filter: TransactionFilter): MoneySummaryResult {
-  return useMemo(() => {
-    // サンプルを持つのは 2026年8月 のみ。他の月は 0 件(空状態)になる。
-    const isSampleMonth =
-      month.getFullYear() === SAMPLE_YEAR && month.getMonth() === SAMPLE_MONTH_INDEX;
-    const monthTransactions = isSampleMonth ? SAMPLE_TRANSACTIONS : [];
+  const monthKey = toMonthKey(month);
+  const range = monthDateRange(month);
+  const trendMonths = recentMonths(month, 6);
+  const trendStart = monthDateRange(trendMonths[0] ?? month).from;
 
-    const transactions =
-      filter === 'all'
-        ? monthTransactions
-        : filter === 'transfer'
-          ? monthTransactions.filter((transaction) => transaction.category === '振替')
-          : monthTransactions.filter(
-              (transaction) => !transaction.isIncome && transaction.category !== '振替',
-            );
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.money.transactions(monthKey),
+    queryFn: () => moneyRepo.listTransactions(supabase, range.from, range.to),
+  });
 
-    return {
-      stats: [
-        { id: 's1', label: '収入', value: '¥280,000', sub: '前月比 ±0', tone: 'money' },
-        { id: 's2', label: '支出', value: '¥182,400', sub: '前月比 +¥8,200', tone: 'diary' },
-        { id: 's3', label: '収支', value: '+¥97,600', sub: '貯蓄率 34.8%', tone: 'calendar' },
-        { id: 's4', label: '予算消化率', value: '73%', sub: '残り ¥67,600 / 9日', tone: 'notes' },
-      ],
-      categories: isSampleMonth ? SAMPLE_CATEGORIES : [],
-      trend: [
-        { label: '3月', incomeRatio: 58, expenseRatio: 44 },
-        { label: '4月', incomeRatio: 62, expenseRatio: 52 },
-        { label: '5月', incomeRatio: 60, expenseRatio: 68 },
-        { label: '6月', incomeRatio: 64, expenseRatio: 49 },
-        { label: '7月', incomeRatio: 61, expenseRatio: 58 },
-        { label: '8月', incomeRatio: 72, expenseRatio: 47 },
-      ],
-      transactions,
-      totalCount: isSampleMonth ? 1284 : 0,
-      expenseTotal: '182,400',
-      isLoading: false,
-      isError: false,
-    };
-  }, [month, filter]);
+  const trendQuery = useQuery({
+    queryKey: queryKeys.money.summary(monthKey),
+    queryFn: () => moneyRepo.listTransactions(supabase, trendStart, range.to),
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.money.categories(),
+    queryFn: () => moneyRepo.listCategories(supabase),
+  });
+
+  const accountsQuery = useQuery({
+    queryKey: queryKeys.money.accounts(),
+    queryFn: () => moneyRepo.listAccounts(supabase),
+  });
+
+  const budgetsQuery = useQuery({
+    queryKey: queryKeys.money.budgets(monthKey),
+    queryFn: () => moneyRepo.listBudgets(supabase, toBudgetMonth(month)),
+  });
+
+  const all = transactionsQuery.data ?? [];
+  const categoryRecords = categoriesQuery.data ?? [];
+  const accountRecords = accountsQuery.data ?? [];
+  const budgets = budgetsQuery.data ?? [];
+
+  const categoryNames = new Map(categoryRecords.map((c) => [c.id, c.name]));
+  const accountNames = new Map(accountRecords.map((a) => [a.id, a.name]));
+
+  // 集計はドメイン関数に任せる(振替は収入・支出に計上しない: MON-05)
+  const summary = summarizeTransactions(all);
+  const byCategory = summarizeByCategory(all, 'expense');
+
+  const budgetTotal = budgets.reduce((total, budget) => total + budget.amount, 0);
+  const budgetRate = budgetTotal > 0 ? Math.round((summary.expense / budgetTotal) * 100) : 0;
+  const remaining = Math.max(budgetTotal - summary.expense, 0);
+  const savingRate = summary.income > 0 ? ((summary.net / summary.income) * 100).toFixed(1) : '0.0';
+
+  const categories: CategoryBreakdown[] = [...byCategory]
+    .map(([categoryId, amount]) => ({ categoryId: categoryId as string | null, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, CATEGORY_COLOR_VARS.length)
+    .map((entry, index) => ({
+      id: entry.categoryId ?? `uncategorized-${index}`,
+      name: (entry.categoryId && categoryNames.get(entry.categoryId)) || '未分類',
+      colorVar: CATEGORY_COLOR_VARS[index % CATEGORY_COLOR_VARS.length] ?? CATEGORY_COLOR_VARS[0],
+      percentage: summary.expense > 0 ? Math.round((entry.amount / summary.expense) * 100) : 0,
+      amount: entry.amount.toLocaleString('ja-JP'),
+    }));
+
+  // 月推移: 取得済みの6か月ぶんを月単位に畳む
+  const trendSource = trendQuery.data ?? [];
+  const monthlyTotals = trendMonths.map((trendMonth) => {
+    const { from, to } = monthDateRange(trendMonth);
+    const inMonth = trendSource.filter((tx) => tx.occurredOn >= from && tx.occurredOn <= to);
+    return { month: trendMonth, ...summarizeTransactions(inMonth) };
+  });
+  const trendPeak = Math.max(1, ...monthlyTotals.flatMap((m) => [m.income, m.expense]));
+  const trend: TrendBar[] = monthlyTotals.map((m) => ({
+    label: `${m.month.getMonth() + 1}月`,
+    incomeRatio: Math.round((m.income / trendPeak) * 100),
+    expenseRatio: Math.round((m.expense / trendPeak) * 100),
+  }));
+
+  const filtered = all.filter((tx) => {
+    if (filter === 'all') return true;
+    if (filter === 'transfer') return tx.kind === 'transfer';
+    return tx.kind === 'expense';
+  });
+
+  const transactions: Transaction[] = filtered.map((tx, index) => ({
+    id: tx.id,
+    date: formatListDate(new Date(`${tx.occurredOn}T00:00:00`)),
+    category:
+      tx.kind === 'transfer'
+        ? '振替'
+        : (tx.categoryId && categoryNames.get(tx.categoryId)) || '未分類',
+    tone: CATEGORY_TONES[index % CATEGORY_TONES.length] ?? 'money',
+    memo: tx.memo ?? '',
+    account: accountNames.get(tx.accountId) ?? '',
+    amount: formatAmount(tx.kind === 'income' ? tx.amount : -tx.amount, {
+      showsPlusSign: tx.kind === 'income',
+    }),
+    isIncome: tx.kind === 'income',
+  }));
+
+  const previousNet = monthlyTotals[monthlyTotals.length - 2];
+  const expenseDiff = previousNet ? summary.expense - previousNet.expense : 0;
+  const incomeDiff = previousNet ? summary.income - previousNet.income : 0;
+
+  return {
+    stats: [
+      {
+        id: 'income',
+        label: '収入',
+        value: formatAmount(summary.income),
+        sub: `前月比 ${incomeDiff === 0 ? '±0' : formatAmount(incomeDiff, { showsPlusSign: true })}`,
+        tone: 'money',
+      },
+      {
+        id: 'expense',
+        label: '支出',
+        value: formatAmount(summary.expense),
+        sub: `前月比 ${expenseDiff === 0 ? '±0' : formatAmount(expenseDiff, { showsPlusSign: true })}`,
+        tone: 'diary',
+      },
+      {
+        id: 'net',
+        label: '収支',
+        value: formatAmount(summary.net, { showsPlusSign: true }),
+        sub: `貯蓄率 ${savingRate}%`,
+        tone: 'calendar',
+      },
+      {
+        id: 'budget',
+        label: '予算消化率',
+        value: budgetTotal > 0 ? `${budgetRate}%` : '—',
+        sub: budgetTotal > 0 ? `残り ${formatAmount(remaining)}` : '予算が未設定です',
+        tone: 'notes',
+      },
+    ],
+    categories,
+    trend,
+    transactions,
+    totalCount: all.length,
+    expenseTotal: summary.expense.toLocaleString('ja-JP'),
+    isLoading:
+      transactionsQuery.isPending ||
+      categoriesQuery.isPending ||
+      accountsQuery.isPending ||
+      budgetsQuery.isPending,
+    isError:
+      transactionsQuery.isError ||
+      categoriesQuery.isError ||
+      accountsQuery.isError ||
+      budgetsQuery.isError,
+    refetch: () => {
+      void transactionsQuery.refetch();
+      void trendQuery.refetch();
+    },
+  };
+}
+
+/** 口座残高(MON-02)。開始残高 + 取引の積み上げで導出する。 */
+export function useAccountBalances(month: Date): ReadonlyMap<string, number> {
+  const range = monthDateRange(month);
+  const accountsQuery = useQuery({
+    queryKey: queryKeys.money.accounts(),
+    queryFn: () => moneyRepo.listAccounts(supabase),
+  });
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.money.transactions(toMonthKey(month)),
+    queryFn: () => moneyRepo.listTransactions(supabase, range.from, range.to),
+  });
+
+  const balances = new Map<string, number>();
+  for (const account of accountsQuery.data ?? []) {
+    balances.set(
+      account.id,
+      calcAccountBalance(account.id, account.initialBalance, transactionsQuery.data ?? []),
+    );
+  }
+  return balances;
+}
+
+/** 取引を追加する(MON-22)。 */
+export function useCreateTransaction(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionRecord, Error, Omit<CreateTransactionInput, 'ledgerId'>>({
+    mutationFn: async (input) => {
+      if (!userId) throw new Error('ログインが必要です');
+      const ledger = await moneyRepo.getOrCreateLedger(supabase, userId);
+      return moneyRepo.createTransaction(supabase, userId, { ...input, ledgerId: ledger.id });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['money'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
 }
 
 /** カテゴリ構成比から conic-gradient の指定を組み立てる(ドーナツ)。 */
 export function buildDonutGradient(categories: readonly CategoryBreakdown[]): string {
+  if (categories.length === 0) return 'var(--color-surface-strong)';
   let cursor = 0;
   const stops = categories.map((category) => {
     const start = cursor;
@@ -219,4 +298,35 @@ export function buildDonutGradient(categories: readonly CategoryBreakdown[]): st
     return `${category.colorVar} ${start}% ${cursor}%`;
   });
   return `conic-gradient(${stops.join(', ')})`;
+}
+
+export interface MoneyAccountsResult {
+  accounts: readonly { id: string; name: string }[];
+  isLoading: boolean;
+}
+
+/** 取引の登録先に使う口座一覧(MON-02)。 */
+export function useMoneyAccounts(): MoneyAccountsResult {
+  const query = useQuery({
+    queryKey: queryKeys.money.accounts(),
+    queryFn: () => moneyRepo.listAccounts(supabase),
+  });
+  return {
+    accounts: (query.data ?? []).filter((account) => !account.isArchived),
+    isLoading: query.isPending,
+  };
+}
+
+export interface MoneyCategoriesResult {
+  categories: readonly { id: string; name: string; kind: 'income' | 'expense' }[];
+  isLoading: boolean;
+}
+
+/** 取引に付けるカテゴリ一覧(MON-03)。 */
+export function useMoneyCategories(): MoneyCategoriesResult {
+  const query = useQuery({
+    queryKey: queryKeys.money.categories(),
+    queryFn: () => moneyRepo.listCategories(supabase),
+  });
+  return { categories: query.data ?? [], isLoading: query.isPending };
 }

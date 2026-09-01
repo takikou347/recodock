@@ -1,56 +1,112 @@
-import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import type { CreateItemInput, ItemRecord } from '@recodock/shared';
+import { formatDateValue, itemsRepo, queryKeys } from '@recodock/shared';
+
+import { supabase } from '../../lib/supabase';
 
 /** ITM-50 の 1 件。 */
 export interface Item {
   id: string;
   name: string;
   category: string;
-  /** 保証期限などの状態バッジ */
   badge: string;
-  /** 期限が近いなど注意を促すバッジか */
+  /** 保証期限が近いなど注意を促すバッジか */
   isWarning: boolean;
 }
 
+/** 保証期限がこの日数以内なら注意表示にする(ITM-52)。 */
+const WARRANTY_WARNING_DAYS = 30;
+
 export interface ItemsResult {
   items: readonly Item[];
-  /** 全件数(フィルタ前) */
   totalCount: number;
   categories: readonly { id: string; label: string; count: number }[];
   isLoading: boolean;
   isError: boolean;
 }
 
-// TODO: items テーブルを引くリポジトリ関数＋TanStack Query に差し替える。
-const SAMPLE_ITEMS: readonly Item[] = [
-  { id: 'i1', name: '加湿器', category: '家電', badge: '保証 2027/01まで', isWarning: false },
-  { id: 'i2', name: '炊飯器', category: '家電', badge: '保証あと28日', isWarning: true },
-  { id: 'i3', name: 'リネンシャツ', category: '衣類', badge: '08/20 追加', isWarning: false },
-  { id: 'i4', name: 'パスポート', category: '書類', badge: '期限 2028/04', isWarning: false },
-  { id: 'i5', name: 'キャンプチェア', category: 'アウトドア', badge: '貸出中', isWarning: false },
-  { id: 'i6', name: 'ドライヤー', category: '家電', badge: '保証 2026/12まで', isWarning: false },
-];
+function daysUntil(dateText: string, today: Date): number {
+  const target = new Date(`${dateText}T00:00:00`);
+  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function toBadge(record: ItemRecord, today: Date): { badge: string; isWarning: boolean } {
+  if (record.warrantyExpiresOn) {
+    const remaining = daysUntil(record.warrantyExpiresOn, today);
+    if (remaining >= 0 && remaining <= WARRANTY_WARNING_DAYS) {
+      return { badge: `保証あと${remaining}日`, isWarning: true };
+    }
+    const expires = new Date(`${record.warrantyExpiresOn}T00:00:00`);
+    return { badge: `保証 ${formatDateValue(expires).slice(0, 7)}まで`, isWarning: false };
+  }
+  if (record.purchasedOn) {
+    const purchased = new Date(`${record.purchasedOn}T00:00:00`);
+    return { badge: `${formatDateValue(purchased).slice(5)} 追加`, isWarning: false };
+  }
+  return { badge: '登録済み', isWarning: false };
+}
 
 /** 持ち物一覧を返す(ITM-50)。category が 'all' 以外ならその分類で絞り込む。 */
 export function useItems(category: string): ItemsResult {
-  return useMemo(() => {
-    const items =
-      category === 'all'
-        ? SAMPLE_ITEMS
-        : category === 'warning'
-          ? SAMPLE_ITEMS.filter((item) => item.isWarning)
-          : SAMPLE_ITEMS.filter((item) => item.category === category);
+  const query = useQuery({
+    queryKey: queryKeys.items.list('all'),
+    queryFn: () => itemsRepo.list(supabase),
+  });
 
+  const today = new Date();
+  const records = query.data ?? [];
+
+  const decorated = records.map((record) => {
+    const { badge, isWarning } = toBadge(record, today);
     return {
-      items,
-      totalCount: 48,
-      categories: [
-        { id: '家電', label: '家電', count: 12 },
-        { id: '衣類', label: '衣類', count: 8 },
-        { id: '書類', label: '書類', count: 5 },
-        { id: 'warning', label: '保証期限間近', count: 1 },
-      ],
-      isLoading: false,
-      isError: false,
+      id: record.id,
+      name: record.name,
+      category: record.category ?? '未分類',
+      badge,
+      isWarning,
     };
-  }, [category]);
+  });
+
+  const items =
+    category === 'all'
+      ? decorated
+      : category === 'warning'
+        ? decorated.filter((item) => item.isWarning)
+        : decorated.filter((item) => item.category === category);
+
+  // 分類チップは実データから組み立てる
+  const countByCategory = new Map<string, number>();
+  for (const item of decorated) {
+    countByCategory.set(item.category, (countByCategory.get(item.category) ?? 0) + 1);
+  }
+  const warningCount = decorated.filter((item) => item.isWarning).length;
+
+  const categories = [
+    ...[...countByCategory].map(([label, count]) => ({ id: label, label, count })),
+    ...(warningCount > 0 ? [{ id: 'warning', label: '保証期限間近', count: warningCount }] : []),
+  ];
+
+  return {
+    items,
+    totalCount: decorated.length,
+    categories,
+    isLoading: query.isPending,
+    isError: query.isError,
+  };
+}
+
+/** 持ち物を追加する(ITM-51)。 */
+export function useCreateItem(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation<ItemRecord, Error, CreateItemInput>({
+    mutationFn: (input) => {
+      if (!userId) throw new Error('ログインが必要です');
+      return itemsRepo.create(supabase, userId, input);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['items'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
 }

@@ -22,8 +22,11 @@ const PIN_COLOR_VARS: Readonly<Record<SpotStatus, string>> = {
 
 /**
  * MAP-70 地図(ピン表示)。
- * デザインは iOS 版のみのため、同じ構成を PC 幅へ展開している。
- * TODO: 地図の下地を実際の地図タイルに差し替え、ピンは緯度経度から配置する。
+ * デザインは iOS 版のみのため、同じ構成(検索・状態フィルタ・ピン・スポットカード)を PC 幅へ展開している。
+ *
+ * ピンは spots / map_entries の緯度経度を表示範囲へ正規化して配置する(useSpots)。
+ * 下地は地図タイルではなく無地の面で、タイル配信元(ライセンス・API キー・費用)を
+ * 決めてから MapLibre 等に差し替える。差し替え先は下地の描画だけで、ピンとカードは変わらない。
  */
 export function MapPage() {
   const [status, setStatus] = useState<SpotStatus | 'all'>('all');

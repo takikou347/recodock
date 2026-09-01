@@ -8,16 +8,12 @@ import { Icon } from '../components/icons/Icon';
 import type { WebModule } from '../modules/registry';
 import type { RouteHandle, ShellMode } from '../modules/registry';
 import { findModule, moduleRegistry } from '../modules/registry';
+import { useAuth } from './auth';
 import { ModuleLauncher } from './ModuleLauncher';
+import { useModuleEntryCounts } from './useModuleEntryCounts';
 import { useUserModules } from './userModules';
 
 import styles from './AppShell.module.css';
-
-/**
- * サイドバーに出す記録件数。
- * TODO: calendar_entries の集約(モジュール別件数)から取得する。
- */
-const MODULE_ENTRY_COUNTS: Partial<Record<ModuleKey, number>> = { money: 12, diary: 4, map: 32 };
 
 /** モジュール色をこのサブツリーへ流し込むためのインラインカスタムプロパティ。 */
 function toneStyle(moduleKey: ModuleKey): CSSProperties {
@@ -116,6 +112,7 @@ interface NavProps {
 /** 幅広サイドバー(SC-04 / MON-20)。検索の横に Google 風のランチャーを置く。 */
 function Sidebar({ modules, activeKey, onOpenLauncher }: NavProps) {
   const navigate = useNavigate();
+  const entryCounts = useModuleEntryCounts();
   const activeModule = modules.find((module) => module.definition.key === activeKey);
   const activeSecondaryNav = activeModule?.secondaryNav
     ? {
@@ -160,7 +157,7 @@ function Sidebar({ modules, activeKey, onOpenLauncher }: NavProps) {
             key={module.definition.key}
             module={module}
             activeKey={activeKey}
-            count={MODULE_ENTRY_COUNTS[module.definition.key]}
+            count={entryCounts.get(module.definition.key)}
           />
         ))}
         <button type="button" className={styles.addModule} onClick={onOpenLauncher}>
@@ -199,10 +196,7 @@ function Sidebar({ modules, activeKey, onOpenLauncher }: NavProps) {
           <Icon name="settings" size={19} />
           設定
         </NavLink>
-        <div className={styles.user}>
-          <span className={styles.avatar} />
-          <span className={styles.userName}>瀧川皓太</span>
-        </div>
+        <UserRow />
       </div>
     </nav>
   );
@@ -213,6 +207,19 @@ interface ModuleNavLinkProps {
   activeKey: ModuleKey;
   /** サイドバー右端に出す記録件数 */
   count?: number;
+}
+
+/** サイドバー最下段のユーザー行。押すとログアウトする。 */
+function UserRow() {
+  const { user, signOut } = useAuth();
+  const label = user?.displayName ?? user?.email ?? 'ゲスト';
+  return (
+    <button type="button" className={styles.user} onClick={() => void signOut()} title="ログアウト">
+      <span className={styles.avatar} />
+      <span className={styles.userName}>{label}</span>
+      <span className={styles.signOut}>ログアウト</span>
+    </button>
+  );
 }
 
 function ModuleNavLink({ module, activeKey, count }: ModuleNavLinkProps) {

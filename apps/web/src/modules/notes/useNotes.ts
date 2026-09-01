@@ -1,13 +1,31 @@
-import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import type { NoteRecord, UpsertNoteInput } from '@recodock/shared';
+import { formatListDate, notesRepo, queryKeys } from '@recodock/shared';
+
+import { supabase } from '../../lib/supabase';
 
 /** MEM-60 の 1 件。 */
 export interface Note {
   id: string;
   title: string;
   excerpt: string;
-  /** リスト内表記: 08/18 */
   date: string;
   isPinned: boolean;
+}
+
+/** 一覧に出す抜粋の長さ。 */
+const EXCERPT_LENGTH = 60;
+
+function toNote(record: NoteRecord): Note {
+  const body = record.body.replace(/\n+/g, ' ').trim();
+  return {
+    id: record.id,
+    title: record.title,
+    excerpt: body.length > EXCERPT_LENGTH ? `${body.slice(0, EXCERPT_LENGTH)}…` : body,
+    date: formatListDate(new Date(record.updatedAt)),
+    isPinned: record.isPinned,
+  };
 }
 
 export interface NotesResult {
@@ -18,62 +36,43 @@ export interface NotesResult {
   isError: boolean;
 }
 
-// TODO: notes テーブルを引くリポジトリ関数＋TanStack Query に差し替える。
-const SAMPLE_NOTES: readonly Note[] = [
-  {
-    id: 'n1',
-    title: '鴨川で読む本リスト',
-    excerpt: '・積読の消化 ・文庫を2冊持っていく',
-    date: '08/18',
-    isPinned: true,
-  },
-  {
-    id: 'n2',
-    title: '引越しチェックリスト',
-    excerpt: '見積もり3社 ／ 退去連絡 ／ 転送届',
-    date: '08/12',
-    isPinned: true,
-  },
-  {
-    id: 'n3',
-    title: '読書メモ: 夜のピクニック',
-    excerpt: '歩行祭の描写が良かった。散歩の記録と紐付けたい',
-    date: '08/17',
-    isPinned: false,
-  },
-  {
-    id: 'n4',
-    title: '買い物メモ',
-    excerpt: '洗剤・コーヒー豆・電池',
-    date: '08/15',
-    isPinned: false,
-  },
-  {
-    id: 'n5',
-    title: '週次ふりかえり 8/10',
-    excerpt: '散歩の習慣が定着してきた',
-    date: '08/10',
-    isPinned: false,
-  },
-  {
-    id: 'n6',
-    title: 'アプリのアイデア',
-    excerpt: '記録の月次ダイジェストを自動生成する',
-    date: '08/03',
-    isPinned: false,
-  },
-];
-
 /** メモ一覧を返す(MEM-60)。ピン留めと通常を分けて返す。 */
 export function useNotes(): NotesResult {
-  return useMemo(
-    () => ({
-      pinnedNotes: SAMPLE_NOTES.filter((note) => note.isPinned),
-      notes: SAMPLE_NOTES.filter((note) => !note.isPinned),
-      totalCount: SAMPLE_NOTES.length,
-      isLoading: false,
-      isError: false,
-    }),
-    [],
-  );
+  const query = useQuery({
+    queryKey: queryKeys.notes.list(),
+    queryFn: () => notesRepo.list(supabase),
+  });
+
+  const all = (query.data ?? []).map(toNote);
+  return {
+    pinnedNotes: all.filter((note) => note.isPinned),
+    notes: all.filter((note) => !note.isPinned),
+    totalCount: all.length,
+    isLoading: query.isPending,
+    isError: query.isError,
+  };
+}
+
+/** メモを作成する(MEM-61)。 */
+export function useCreateNote(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation<NoteRecord, Error, UpsertNoteInput>({
+    mutationFn: (input) => {
+      if (!userId) throw new Error('ログインが必要です');
+      return notesRepo.create(supabase, userId, input);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** ピン留めを切り替える(MEM-62)。 */
+export function useTogglePinned() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { noteId: string; isPinned: boolean }>({
+    mutationFn: ({ noteId, isPinned }) => notesRepo.setPinned(supabase, noteId, isPinned),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notes'] }),
+  });
 }

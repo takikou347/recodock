@@ -13,6 +13,7 @@ import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { shiftMonth } from '../../lib/calendarGrid';
 import { moduleThemeClass } from '../../lib/moduleTheme';
+import { TransactionCreateModal } from './TransactionCreateModal';
 import type { TransactionFilter } from './useMoneySummary';
 import { buildDonutGradient, useMoneySummary } from './useMoneySummary';
 
@@ -25,10 +26,23 @@ import styles from './MoneyHomePage.module.css';
  */
 export function MoneyHomePage() {
   const { showToast } = useToast();
-  const [month, setMonth] = useState(() => new Date(2026, 7, 1));
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [filter, setFilter] = useState<TransactionFilter>('all');
-  const { stats, categories, trend, transactions, totalCount, expenseTotal, isLoading, isError } =
-    useMoneySummary(month, filter);
+  const {
+    stats,
+    categories,
+    trend,
+    transactions,
+    totalCount,
+    expenseTotal,
+    isLoading,
+    isError,
+    refetch,
+  } = useMoneySummary(month, filter);
 
   const donutStyle: CSSProperties = {
     '--donut-gradient': buildDonutGradient(categories),
@@ -63,11 +77,7 @@ export function MoneyHomePage() {
           >
             CSV 出力
           </Button>
-          <Button
-            variant="primary"
-            icon="plus"
-            onClick={() => showToast({ message: '取引を保存しました' })}
-          >
+          <Button variant="primary" icon="plus" onClick={() => setIsCreateOpen(true)}>
             取引を追加
           </Button>
         </div>
@@ -185,7 +195,7 @@ export function MoneyHomePage() {
                   <ErrorState
                     title="取引を読み込めませんでした"
                     description="記録は端末に保存済み。接続を確認してください。"
-                    onRetry={() => setMonth((current) => new Date(current))}
+                    onRetry={refetch}
                   />
                 </div>
               ) : isLoading ? (
@@ -199,7 +209,12 @@ export function MoneyHomePage() {
                     title="まだ取引がありません"
                     description="最初の収支を記録してみましょう"
                     action={
-                      <Button variant="primary" size="sm" icon="plus">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon="plus"
+                        onClick={() => setIsCreateOpen(true)}
+                      >
                         取引を追加
                       </Button>
                     }
@@ -247,6 +262,8 @@ export function MoneyHomePage() {
           </Card>
         </div>
       </div>
+
+      <TransactionCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
     </div>
   );
 }

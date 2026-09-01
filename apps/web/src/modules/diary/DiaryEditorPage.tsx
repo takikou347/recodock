@@ -9,7 +9,7 @@ import { Icon } from '../../components/icons/Icon';
 import { useToast } from '../../components/Toast';
 import { moduleThemeClass } from '../../lib/moduleTheme';
 import type { DiaryBlock, ImageAlign } from './useDiaries';
-import { useDiary } from './useDiaries';
+import { serializeBlocks, useDiary, useSaveDiary } from './useDiaries';
 
 import styles from './DiaryEditorPage.module.css';
 
@@ -88,11 +88,14 @@ function nextBlockId(): string {
   return `b-new-${blockIdCounter}`;
 }
 
+/** 入力が止まってから保存するまでの待ち時間(自動保存)。 */
+const AUTOSAVE_DEBOUNCE_MS = 1200;
+
 /**
  * DIA-42 日記エディタ(リッチエディタ)。
  * ブロック配列で本文を保持し、ホバーでハンドル、テキスト選択でバブル、
  * 「/」でスラッシュメニューを出す。画像は配置(幅いっぱい / 中央 / 回り込み)とキャプションを持つ。
- * TODO: 自動保存(mutation)と asset のアップロードを接続する。
+ * 入力が止まると自動保存する。
  */
 export function DiaryEditorPage() {
   const navigate = useNavigate();
@@ -100,14 +103,17 @@ export function DiaryEditorPage() {
   const diary = useDiary(diaryId);
   const { showToast } = useToast();
 
-  const [title, setTitle] = useState(diary?.title ?? '');
-  const [blocks, setBlocks] = useState<readonly DiaryBlock[]>(diary?.blocks ?? []);
+  const [title, setTitle] = useState('');
+  const [blocks, setBlocks] = useState<readonly DiaryBlock[]>([]);
   const [history, setHistory] = useState<readonly (readonly DiaryBlock[])[]>([]);
+  const loadedDiaryId = useRef<string | undefined>(undefined);
   const [hoveredBlockId, setHoveredBlockId] = useState<string>();
   const [selectedImageId, setSelectedImageId] = useState<string>();
   const [bubbleBlockId, setBubbleBlockId] = useState<string>();
   const [slashBlockId, setSlashBlockId] = useState<string>();
-  const [savedAt, setSavedAt] = useState(() => new Date(2026, 7, 22, 19, 42));
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const saveDiary = useSaveDiary();
+  const isDirty = useRef(false);
 
   const commit = useCallback(
     (updater: (current: readonly DiaryBlock[]) => readonly DiaryBlock[]) => {
@@ -119,6 +125,15 @@ export function DiaryEditorPage() {
     },
     [],
   );
+
+  // 外部システム(サーバー)との同期: 取得できた日記をエディタへ読み込む
+  useEffect(() => {
+    if (!diary || loadedDiaryId.current === diary.id) return;
+    loadedDiaryId.current = diary.id;
+    setTitle(diary.title);
+    setBlocks(diary.blocks);
+    isDirty.current = false;
+  }, [diary]);
 
   const undo = () => {
     setHistory((past) => {
@@ -146,6 +161,20 @@ export function DiaryEditorPage() {
     commit((current) => current.filter((block) => block.id !== blockId));
     setSelectedImageId(undefined);
   };
+
+  // 外部システム(サーバー)との同期: 入力が止まったら本文を保存する
+  useEffect(() => {
+    if (!diary || !isDirty.current) return;
+    const timer = setTimeout(() => {
+      isDirty.current = false;
+      const body = [title, serializeBlocks(blocks)].filter(Boolean).join('\n\n');
+      saveDiary.mutate(
+        { diaryId: diary.id, input: { body } },
+        { onSuccess: () => setSavedAt(new Date()) },
+      );
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [title, blocks, diary, saveDiary]);
 
   // 外部システム(document のクリック)との同期: 余白クリックで選択・メニューを解除する
   useEffect(() => {
@@ -192,7 +221,11 @@ export function DiaryEditorPage() {
               <span className={styles.savedIcon}>
                 <Icon name="check" size={14} />
               </span>
-              保存済み {formatTime(savedAt)}
+              {saveDiary.isPending
+                ? '保存中…'
+                : savedAt
+                  ? `保存済み ${formatTime(savedAt)}`
+                  : '未保存'}
             </span>
             <button
               type="button"

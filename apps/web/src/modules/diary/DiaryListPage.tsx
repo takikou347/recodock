@@ -11,7 +11,7 @@ import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { moduleThemeClass } from '../../lib/moduleTheme';
 import type { DiaryBlock, DiarySummary } from './useDiaries';
-import { useDiaries, useDiary } from './useDiaries';
+import { useDeleteDiary, useDiaries, useDiary } from './useDiaries';
 
 import styles from './DiaryListPage.module.css';
 
@@ -28,10 +28,13 @@ export function DiaryListPage() {
 
   const { diaries, isLoading, isError } = useDiaries(keyword);
   const selected = useDiary(diaryId ?? diaries[0]?.id);
+  const deleteDiary = useDeleteDiary();
 
-  const onDelete = () => {
+  const onDelete = async () => {
+    if (!selected) return;
     setIsDeleteOpen(false);
-    showToast({ message: '日記を削除しました', onUndo: () => undefined });
+    await deleteDiary.mutateAsync(selected.id);
+    showToast({ message: '日記を削除しました' });
     navigate('/diary');
   };
 
@@ -102,7 +105,7 @@ export function DiaryListPage() {
         title="日記を削除しますか？"
         description={`「${selected?.title ?? ''}」を削除します。30日間はゴミ箱から戻せます。`}
         confirmLabel="削除する"
-        onConfirm={onDelete}
+        onConfirm={() => void onDelete()}
         onCancel={() => setIsDeleteOpen(false)}
       />
     </div>

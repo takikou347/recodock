@@ -35,9 +35,6 @@ const VIEW_OPTIONS = [
   { value: 'day', label: '日' },
 ] as const satisfies readonly { value: CalendarView; label: string }[];
 
-/** サンプル月に合わせた「今日」。TODO: 実装時は new Date() にする。 */
-const TODAY = new Date(2026, 7, 22);
-
 function toneStyle(moduleKey: ModuleKey): CSSProperties {
   return { '--tone-solid': `var(--color-${moduleKey}-solid)` } as CSSProperties;
 }
@@ -48,14 +45,16 @@ function toneStyle(moduleKey: ModuleKey): CSSProperties {
  */
 export function CalendarHomePage() {
   const navigate = useNavigate();
-  const [month, setMonth] = useState(() => new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(TODAY);
+  // 「今日」は描画のたびに変わらないよう、マウント時に一度だけ確定させる
+  const [today] = useState(() => new Date());
+  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(today);
   const [view, setView] = useState<CalendarView>('month');
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
-  const { daysByDate, isLoading, isError } = useCalendarMonth(month);
+  const { daysByDate, isLoading, isError, refetch } = useCalendarMonth(month);
   const todayEntries = useTodayEntries(selectedDate);
-  const cells = buildMonthGrid(month, TODAY);
+  const cells = buildMonthGrid(month, today);
 
   return (
     <div className={styles.root}>
@@ -85,8 +84,8 @@ export function CalendarHomePage() {
               variant="secondary"
               size="sm"
               onClick={() => {
-                setMonth(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
-                setSelectedDate(TODAY);
+                setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                setSelectedDate(today);
               }}
             >
               今日
@@ -117,7 +116,7 @@ export function CalendarHomePage() {
           <ErrorState
             title="カレンダーを読み込めませんでした"
             description="記録は端末に保存済み。接続を確認してください。"
-            onRetry={() => setMonth((current) => new Date(current))}
+            onRetry={refetch}
           />
         ) : isLoading ? (
           <Skeleton lineCount={5} hasBlock />
@@ -142,7 +141,7 @@ export function CalendarHomePage() {
         <div>
           <p className={styles.detailDate}>{formatFullDate(selectedDate)}</p>
           <h2 className={styles.detailTitle}>
-            {isSameDay(selectedDate, TODAY)
+            {isSameDay(selectedDate, today)
               ? '今日の記録'
               : `${formatHeadingDate(selectedDate)}の記録`}
           </h2>
@@ -165,10 +164,6 @@ export function CalendarHomePage() {
             ))}
           </div>
         )}
-
-        <p className={styles.note}>
-          日付セルのクリックで CAL-13 日別記録一覧へ。バッジは calendar_entries ビューから集約。
-        </p>
 
         <Fab
           actions={[
