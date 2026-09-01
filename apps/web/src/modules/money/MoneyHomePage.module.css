@@ -1,0 +1,350 @@
+/* MON-20 家計簿ホーム(月次サマリ) ＋ MON-21 取引一覧。 */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  font-size: 28px;
+  margin-top: 6px;
+  color: var(--tone-fg);
+}
+
+.statSub {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  margin-top: var(--space-1);
+}
+
+.columns {
+  display: flex;
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+}
+
+.sideColumn {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cardTitle {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+}
+
+.cardMeta {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ─── カテゴリ別支出(ドーナツ) ─── */
+.donutWrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-5) 0;
+}
+
+.donut {
+  width: 168px;
+  height: 168px;
+  border-radius: var(--radius-pill);
+  background: var(--donut-gradient);
+  border: var(--border-width) solid var(--color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donutHole {
+  width: 104px;
+  height: 104px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.donutLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-muted);
+}
+
+.donutValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  font-size: 17px;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: var(--space-1);
+  background: var(--swatch-color);
+}
+
+.legendName {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  width: 74px;
+}
+
+.legendBar {
+  flex: 1;
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-strong);
+  overflow: hidden;
+}
+
+.legendFill {
+  display: block;
+  height: 100%;
+  width: var(--fill-width);
+  background: var(--swatch-color);
+}
+
+.legendAmount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  width: 52px;
+  text-align: right;
+}
+
+/* ─── 月推移 ─── */
+.trendHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.trend {
+  display: flex;
+  align-items: flex-end;
+  gap: 22px;
+  height: 150px;
+  margin-top: var(--space-4);
+  padding-bottom: 6px;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.trendMonth {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.trendBars {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.trendBar {
+  width: 22px;
+  height: var(--bar-height);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 6px 6px 0 0;
+}
+
+.trendIncome {
+  background: var(--color-money-line);
+}
+
+.trendExpense {
+  background: var(--color-diary-line);
+}
+
+.trendLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ─── 取引一覧 ─── */
+.txnCard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.txnHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width) solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.txnCount {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.txnBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.txnRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border-faint);
+  width: 100%;
+  text-align: left;
+}
+
+.txnRow:hover {
+  background: var(--color-bg);
+}
+
+.txnDate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.txnCategory {
+  padding: var(--space-1) 10px;
+  border-radius: var(--space-2);
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.txnMemo {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.txnAccount {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.txnAmount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  width: 96px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.txnAmountIncome {
+  color: var(--color-income);
+}
+
+.txnFooter {
+  margin-top: auto;
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  justify-content: center;
+}
+
+.states {
+  padding: var(--space-5);
+}
+
+/* ─── SP: サマリカード＋予算＋最近の取引の 1 カラム ─── */
+@media (width < 1120px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .columns {
+    flex-direction: column;
+  }
+
+  .sideColumn {
+    width: auto;
+  }
+}
+
+@media (width < 768px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .txnAccount,
+  .txnDate {
+    display: none;
+  }
+
+  .txnRow {
+    padding: 11px var(--space-4);
+    gap: 10px;
+  }
+
+  .txnAmount {
+    width: auto;
+    font-size: var(--font-size-md);
+  }
+}
