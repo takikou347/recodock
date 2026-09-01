@@ -5,8 +5,10 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { AppLayout } from './App';
 import { ToastProvider } from './components/Toast';
+import { AuthProvider } from './core/auth';
 import { LoginPage } from './core/LoginPage';
 import { ModuleManagerPage } from './core/ModuleManagerPage';
+import { RequireAuth } from './core/RequireAuth';
 import { SearchPage } from './core/SearchPage';
 import { SettingsPage } from './core/SettingsPage';
 import { UserModulesProvider } from './core/userModules';
@@ -28,7 +30,11 @@ const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       ...moduleRegistry.flatMap((mod) => mod.routes),
       {
@@ -56,11 +62,13 @@ if (!rootElement) throw new Error('#root が見つかりません');
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <UserModulesProvider>
-        <ToastProvider>
-          <RouterProvider router={router} />
-        </ToastProvider>
-      </UserModulesProvider>
+      <AuthProvider>
+        <UserModulesProvider>
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
+        </UserModulesProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
