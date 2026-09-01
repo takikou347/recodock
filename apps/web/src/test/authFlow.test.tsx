@@ -83,3 +83,50 @@ describe('認証(SC-01): ログインしないと記録に入れない', () => {
     await waitFor(() => expect(authRepo.signOut).toHaveBeenCalledTimes(1));
   });
 });
+
+describe('サインアップ(SC-02)とパスワード再設定(SC-03)', () => {
+  it('ログイン画面の「新規登録」からサインアップ画面へ移り、登録できる', async () => {
+    const user = userEvent.setup();
+    signedOut();
+
+    renderApp({ route: '/login' });
+    await user.click(await screen.findByRole('button', { name: '新規登録' }));
+
+    expect(await screen.findByRole('heading', { name: '新規登録' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('メールアドレス'), 'kota@example.com');
+    await user.type(screen.getByLabelText('パスワード'), 'password1234');
+    await user.type(screen.getByLabelText('パスワード(確認)'), 'password1234');
+    await user.click(screen.getByRole('button', { name: '登録する' }));
+
+    await waitFor(() => expect(authRepo.signUpWithPassword).toHaveBeenCalledTimes(1));
+  });
+
+  it('確認用パスワードが一致しないと登録しない', async () => {
+    const user = userEvent.setup();
+    signedOut();
+
+    renderApp({ route: '/signup' });
+    await user.type(await screen.findByLabelText('メールアドレス'), 'kota@example.com');
+    await user.type(screen.getByLabelText('パスワード'), 'password1234');
+    await user.type(screen.getByLabelText('パスワード(確認)'), 'different');
+    await user.click(screen.getByRole('button', { name: '登録する' }));
+
+    expect(await screen.findByText('確認用のパスワードが一致しません')).toBeInTheDocument();
+    expect(authRepo.signUpWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('「お忘れですか？」から再設定メールを送れる', async () => {
+    const user = userEvent.setup();
+    signedOut();
+
+    renderApp({ route: '/login' });
+    await user.click(await screen.findByRole('button', { name: 'お忘れですか？' }));
+
+    expect(await screen.findByRole('heading', { name: 'パスワード再設定' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('メールアドレス'), 'kota@example.com');
+    await user.click(screen.getByRole('button', { name: '再設定メールを送る' }));
+
+    await waitFor(() => expect(authRepo.requestPasswordReset).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/再設定メールを送りました/)).toBeInTheDocument();
+  });
+});

@@ -8,9 +8,11 @@ import { ToastProvider } from '../components/Toast';
 import { AuthProvider } from '../core/auth';
 import { LoginPage } from '../core/LoginPage';
 import { ModuleManagerPage } from '../core/ModuleManagerPage';
+import { PasswordResetPage } from '../core/PasswordResetPage';
 import { RequireAuth } from '../core/RequireAuth';
 import { SearchPage } from '../core/SearchPage';
 import { SettingsPage } from '../core/SettingsPage';
+import { SignUpPage } from '../core/SignUpPage';
 import { UserModulesProvider } from '../core/userModules';
 import { moduleRegistry, type RouteHandle } from '../modules/registry';
 
@@ -37,6 +39,8 @@ export function renderApp({ route = '/' }: RenderAppOptions = {}): RenderResult 
   const router = createMemoryRouter(
     [
       { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <SignUpPage /> },
+      { path: '/reset-password', element: <PasswordResetPage /> },
       {
         path: '/',
         element: (
