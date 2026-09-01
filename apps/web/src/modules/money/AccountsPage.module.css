@@ -1,0 +1,61 @@
+/* MON-23 口座一覧・残高 / MON-24 口座作成・編集。 */
+
+.totalLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-money-fg);
+}
+
+.totalValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-7xl);
+  color: var(--color-money-fg);
+  margin-top: var(--space-1);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowName {
+  display: block;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.rowKind {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.rowBalance {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-2xl);
+  color: var(--balance-color);
+}
+
+.fieldLabel {
+  display: block;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 6px;
+}

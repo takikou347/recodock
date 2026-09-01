@@ -9,7 +9,11 @@ import { DiaryEditorPage } from './diary/DiaryEditorPage';
 import { DiaryListPage } from './diary/DiaryListPage';
 import { ItemsListPage } from './items/ItemsListPage';
 import { MapPage } from './map/MapPage';
+import { AccountsPage } from './money/AccountsPage';
+import { BudgetsPage } from './money/BudgetsPage';
+import { CategoriesPage } from './money/CategoriesPage';
 import { MoneyHomePage } from './money/MoneyHomePage';
+import { NoteEditorPage } from './notes/NoteEditorPage';
 import { NotesListPage } from './notes/NotesListPage';
 
 /** シェルの形。幅広サイドバーか、左に自前のリストを持つ画面向けのアイコンレール。 */
@@ -32,10 +36,10 @@ export interface WebModule {
   /** SC-05 の追加済みリストに出す詳細 */
   detail: string;
   /**
-   * モジュール内ナビ(例: 家計簿の サマリ／取引一覧／口座・残高…)。
+   * モジュール内ナビ(例: 家計簿の サマリ／口座・残高…)。
    * アクティブなときだけサイドバーに出る。コアはここを素通しで描画し、中身を知らない。
    */
-  secondaryNav?: readonly string[];
+  secondaryNav?: readonly { label: string; path: string }[];
   routes: RouteObject[];
 }
 
@@ -80,11 +84,31 @@ export const moduleRegistry: WebModule[] = [
     icon: 'money',
     description: '収支・口座・予算',
     detail: '収支・口座・予算',
-    secondaryNav: ['サマリ', '取引一覧', '口座・残高', 'カテゴリ管理', '予算設定'],
+    secondaryNav: [
+      { label: 'サマリ・取引一覧', path: '/money' },
+      { label: '口座・残高', path: '/money/accounts' },
+      { label: 'カテゴリ管理', path: '/money/categories' },
+      { label: '予算設定', path: '/money/budgets' },
+    ],
     routes: [
       {
         path: 'money',
         element: <MoneyHomePage />,
+        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
+      },
+      {
+        path: 'money/accounts',
+        element: <AccountsPage />,
+        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
+      },
+      {
+        path: 'money/categories',
+        element: <CategoriesPage />,
+        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
+      },
+      {
+        path: 'money/budgets',
+        element: <BudgetsPage />,
         handle: { shellMode: 'sidebar' } satisfies RouteHandle,
       },
     ],
@@ -152,6 +176,11 @@ export const moduleRegistry: WebModule[] = [
       {
         path: 'notes',
         element: <NotesListPage />,
+        handle: { shellMode: 'rail' } satisfies RouteHandle,
+      },
+      {
+        path: 'notes/:noteId',
+        element: <NoteEditorPage />,
         handle: { shellMode: 'rail' } satisfies RouteHandle,
       },
     ],

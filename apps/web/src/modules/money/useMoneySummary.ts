@@ -42,7 +42,7 @@ export interface TrendBar {
   expenseRatio: number;
 }
 
-/** MON-21 取引一覧の 1 行。 */
+/** MON-21 取引一覧の 1 行。raw は MON-22 編集フォームへの受け渡しに使う。 */
 export interface Transaction {
   id: string;
   date: string;
@@ -52,9 +52,17 @@ export interface Transaction {
   account: string;
   amount: string;
   isIncome: boolean;
+  raw: TransactionRecord;
 }
 
 export type TransactionFilter = 'all' | 'expense' | 'transfer';
+
+/** MON-21 の絞り込み(種別・口座・カテゴリ)。'all' は絞り込みなし。 */
+export interface TransactionFilters {
+  kind: TransactionFilter;
+  accountId: string;
+  categoryId: string;
+}
 
 /** カテゴリ内訳に順番に当てる色(モジュールの淡色を流用する)。 */
 const CATEGORY_COLOR_VARS = [
@@ -97,7 +105,8 @@ function recentMonths(month: Date, count: number): Date[] {
 }
 
 /** 月次サマリと取引一覧を返す(MON-20 / MON-21)。 */
-export function useMoneySummary(month: Date, filter: TransactionFilter): MoneySummaryResult {
+export function useMoneySummary(month: Date, filters: TransactionFilters): MoneySummaryResult {
+  const filter = filters.kind;
   const monthKey = toMonthKey(month);
   const range = monthDateRange(month);
   const trendMonths = recentMonths(month, 6);
@@ -172,9 +181,11 @@ export function useMoneySummary(month: Date, filter: TransactionFilter): MoneySu
   }));
 
   const filtered = all.filter((tx) => {
-    if (filter === 'all') return true;
-    if (filter === 'transfer') return tx.kind === 'transfer';
-    return tx.kind === 'expense';
+    if (filter === 'transfer' && tx.kind !== 'transfer') return false;
+    if (filter === 'expense' && tx.kind !== 'expense') return false;
+    if (filters.accountId !== 'all' && tx.accountId !== filters.accountId) return false;
+    if (filters.categoryId !== 'all' && tx.categoryId !== filters.categoryId) return false;
+    return true;
   });
 
   const transactions: Transaction[] = filtered.map((tx, index) => ({
@@ -191,6 +202,7 @@ export function useMoneySummary(month: Date, filter: TransactionFilter): MoneySu
       showsPlusSign: tx.kind === 'income',
     }),
     isIncome: tx.kind === 'income',
+    raw: tx,
   }));
 
   const previousNet = monthlyTotals[monthlyTotals.length - 2];
@@ -281,6 +293,35 @@ export function useCreateTransaction(userId: string | undefined) {
       const ledger = await moneyRepo.getOrCreateLedger(supabase, userId);
       return moneyRepo.createTransaction(supabase, userId, { ...input, ledgerId: ledger.id });
     },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['money'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** 取引を更新する(MON-22 の編集)。 */
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    { transactionId: string; input: Parameters<typeof moneyRepo.updateTransaction>[2] }
+  >({
+    mutationFn: ({ transactionId, input }) =>
+      moneyRepo.updateTransaction(supabase, transactionId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['money'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** 取引を削除する。 */
+export function useDeleteTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (transactionId) => moneyRepo.removeTransaction(supabase, transactionId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['money'] });
       void queryClient.invalidateQueries({ queryKey: ['core'] });
