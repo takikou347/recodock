@@ -1,0 +1,90 @@
+/* SC-08 モジュールランチャー。中央モーダルの中に 3 列のモジュールタイルを並べる。 */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+@media (width < 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.tile {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 18px;
+  padding: var(--space-4) var(--space-3);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.tileIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: var(--tone-bg);
+  border: var(--border-width) solid var(--tone-line);
+  color: var(--tone-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tileName {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+}
+
+.tileDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+}
+
+.action {
+  margin-top: 2px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.actionAdded {
+  background: var(--color-surface-strong);
+  color: var(--color-ink-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: var(--space-1);
+  border-top: var(--border-width) solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.footerLink {
+  margin-left: auto;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-calendar-solid);
+}

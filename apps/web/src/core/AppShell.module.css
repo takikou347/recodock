@@ -1,0 +1,465 @@
+/*
+ * 共通シェル(01_screen_design.md 3.2)。
+ * PC は「幅広サイドバー」か「アイコンレール」のどちらかで全画面の構造を揃える。
+ * ブレークポイント: SP < 768 ≤ タブレット < 1120 ≤ PC。
+ */
+
+.root {
+  display: flex;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ─────────── 幅広サイドバー ─────────── */
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--color-surface-raised);
+  border-right: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  padding: 22px var(--space-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px 22px;
+}
+
+.brandMark {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-calendar-solid);
+  border: var(--border-width) solid var(--color-ink);
+  color: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brandName {
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-heading);
+  font-size: var(--font-size-3xl);
+}
+
+.searchRow {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 2px var(--space-3);
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 9px var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-ink-subtle);
+  font-size: var(--font-size-md);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.searchBox:hover {
+  color: var(--color-ink-muted);
+}
+
+/* Google 風のランチャー(9ドット) */
+.launcher {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.launcher:hover {
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.launcherActive {
+  background: var(--color-accent);
+  border-color: var(--color-ink);
+  color: var(--color-surface);
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+
+.sectionLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-subtle);
+  letter-spacing: var(--letter-spacing-caps);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-muted);
+}
+
+.navItem:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+
+.navItemActive {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+}
+
+.navIcon {
+  color: var(--color-ink-subtle);
+  display: flex;
+}
+
+.navItemActive .navIcon {
+  color: var(--tone-solid);
+}
+
+.navCount {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-subtle);
+}
+
+.addModule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  margin-top: var(--space-1);
+  border-radius: var(--radius-md);
+  border: var(--border-width) dashed var(--color-border-dashed);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  width: 100%;
+}
+
+.addModule:hover {
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+.sidebarFooter {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-lg);
+}
+
+.footerItem:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  margin-top: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-avatar);
+  border: var(--border-width) solid var(--color-ink);
+}
+
+.userName {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ─────────── アイコンレール ─────────── */
+.rail {
+  width: var(--rail-width);
+  flex-shrink: 0;
+  background: var(--color-surface-raised);
+  border-right: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 0;
+  gap: 10px;
+}
+
+.railBrand {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--color-calendar-solid);
+  border: var(--border-width) solid var(--color-ink);
+  color: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
+.railItem {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.railItem:hover {
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.railItemActive {
+  background: var(--tone-bg);
+  border-color: var(--tone-line);
+  color: var(--tone-fg);
+}
+
+.railAdd {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: var(--border-width) dashed var(--color-border-dashed);
+  color: var(--color-ink-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-1);
+}
+
+.railAdd:hover {
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+.railFooter {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.railFooterItem {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--color-ink-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.railFooterItem:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+
+.railFooterItemActive {
+  background: var(--color-surface-muted);
+  border: var(--border-width) solid var(--color-border);
+  color: var(--color-ink);
+}
+
+/* ─────────── SP: ヘッダ＋ドロワー ─────────── */
+.mobileHeader {
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-raised);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.hamburger {
+  display: flex;
+  align-items: center;
+  color: var(--color-ink);
+}
+
+.mobileTitle {
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-heading);
+  font-size: 19px;
+}
+
+@media (width < 768px) {
+  .sidebar,
+  .rail {
+    display: none;
+  }
+
+  .mobileHeader {
+    display: flex;
+  }
+}
+
+/* ドロワー(SP のモジュール切替) */
+.drawerScrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  z-index: var(--z-sheet);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 296px;
+  max-width: 84%;
+  background: var(--color-surface-raised);
+  border-right: var(--border-width) solid var(--color-ink);
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: var(--z-sheet);
+}
+
+/* ドロワー内はタップ領域を確保する */
+.drawer .navItem {
+  gap: var(--space-3);
+  padding: 13px var(--space-3);
+  font-size: var(--font-size-xl);
+  min-height: var(--tap-target);
+}
+
+.drawerAddable {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: var(--border-width) dashed var(--color-border-dashed);
+  background: var(--color-bg);
+}
+
+.drawerAddableLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+  margin-bottom: 10px;
+}
+
+.drawerAddableRow {
+  display: flex;
+  gap: 10px;
+}
+
+.drawerAddableItem {
+  flex: 1;
+  max-width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.drawerAddableIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: var(--tone-bg);
+  border: var(--border-width) solid var(--tone-line);
+  color: var(--tone-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawerAddableName {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+
+/* ─────────── モジュール内ナビ(例: MONEY 内ナビ) ───────────
+ * アクティブなモジュールが宣言したときだけ出す(FR-02: コアは中身を知らない)。 */
+.secondaryNav {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--tone-bg);
+  border: var(--border-width) solid var(--tone-line);
+}
+
+.secondaryNavLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--tone-fg);
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+}
+
+.secondaryNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-size-md);
+  color: var(--tone-fg);
+}
+
+.secondaryNavItemActive {
+  font-weight: var(--font-weight-bold);
+}
