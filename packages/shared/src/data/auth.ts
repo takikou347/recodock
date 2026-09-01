@@ -66,6 +66,16 @@ export async function signInWithGoogle(client: RecodockClient, redirectTo: strin
   if (error) throw toAppError(error);
 }
 
+/** パスワード再設定メールを送る(SC-03)。redirectTo は再設定画面の URL。 */
+export async function requestPasswordReset(
+  client: RecodockClient,
+  email: string,
+  redirectTo: string,
+): Promise<void> {
+  const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw toAppError(error);
+}
+
 /** ログアウトする。 */
 export async function signOut(client: RecodockClient): Promise<void> {
   const { error } = await client.auth.signOut();

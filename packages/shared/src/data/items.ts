@@ -86,6 +86,38 @@ export async function create(
   return toDomain(unwrap(result));
 }
 
+/** 1 件取得する(ITM-51)。 */
+export async function get(client: RecodockClient, itemId: string): Promise<ItemRecord> {
+  const result = await client.from('items').select(COLUMNS).eq('id', itemId).single();
+  return toDomain(unwrap(result));
+}
+
+/** 持ち物を更新する(ITM-52)。 */
+export async function update(
+  client: RecodockClient,
+  itemId: string,
+  input: Partial<CreateItemInput>,
+): Promise<ItemRecord> {
+  const result = await client
+    .from('items')
+    .update({
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.category !== undefined && { category: input.category }),
+      ...(input.tags !== undefined && { tags: [...input.tags] }),
+      ...(input.purchasedOn !== undefined && { purchased_on: input.purchasedOn }),
+      ...(input.price !== undefined && { price: input.price }),
+      ...(input.location !== undefined && { location: input.location }),
+      ...(input.warrantyExpiresOn !== undefined && {
+        warranty_expires_on: input.warrantyExpiresOn,
+      }),
+      ...(input.memo !== undefined && { memo: input.memo }),
+    })
+    .eq('id', itemId)
+    .select(COLUMNS)
+    .single();
+  return toDomain(unwrap(result));
+}
+
 /** 持ち物を削除する。 */
 export async function remove(client: RecodockClient, itemId: string): Promise<void> {
   unwrapVoid(await client.from('items').delete().eq('id', itemId));

@@ -11,6 +11,7 @@ export * as moneyRepo from './data/money';
 export * as notesRepo from './data/notes';
 export { queryKeys } from './data/queryKeys';
 export * as spotsRepo from './data/spots';
+export * as storageRepo from './data/storage';
 export * as userModulesRepo from './data/userModules';
 export * as userSettingsRepo from './data/userSettings';
 export * from './domain/format';

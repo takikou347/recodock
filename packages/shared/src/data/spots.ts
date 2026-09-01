@@ -78,6 +78,28 @@ export async function create(
   return toDomain(unwrap(result));
 }
 
+/** スポットを更新する(MAP-72)。 */
+export async function update(
+  client: RecodockClient,
+  spotId: string,
+  input: Partial<CreateSpotInput>,
+): Promise<SpotRecord> {
+  const result = await client
+    .from('spots')
+    .update({
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.latitude !== undefined && { latitude: input.latitude }),
+      ...(input.longitude !== undefined && { longitude: input.longitude }),
+      ...(input.status !== undefined && { status: input.status }),
+      ...(input.visitedOn !== undefined && { visited_on: input.visitedOn }),
+      ...(input.memo !== undefined && { memo: input.memo }),
+    })
+    .eq('id', spotId)
+    .select(COLUMNS)
+    .single();
+  return toDomain(unwrap(result));
+}
+
 /** スポットを削除する。 */
 export async function remove(client: RecodockClient, spotId: string): Promise<void> {
   unwrapVoid(await client.from('spots').delete().eq('id', spotId));

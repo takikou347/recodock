@@ -115,6 +115,29 @@ export async function remove(client: RecodockClient, diaryId: string): Promise<v
   unwrapVoid(await client.from('diaries').delete().eq('id', diaryId));
 }
 
+/** スポットに紐づく日記(MAP-71 の「関連日記への導線」)。 */
+export async function listBySpot(client: RecodockClient, spotId: string): Promise<DiaryRecord[]> {
+  const result = await client
+    .from('diaries')
+    .select(COLUMNS)
+    .eq('spot_id', spotId)
+    .order('entry_date', { ascending: false });
+  return unwrap(result).map(toDomain);
+}
+
+/** 指定日の日記(DIA-04「1年前の今日」)。 */
+export async function listByDate(
+  client: RecodockClient,
+  entryDate: string,
+): Promise<DiaryRecord[]> {
+  const result = await client
+    .from('diaries')
+    .select(COLUMNS)
+    .eq('entry_date', entryDate)
+    .order('created_at');
+  return unwrap(result).map(toDomain);
+}
+
 /** 日記に紐づく写真(diary_photos)。本文の image ブロックはこの asset を参照する。 */
 export interface DiaryPhotoRecord {
   id: string;

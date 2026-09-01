@@ -71,6 +71,32 @@ export async function create(
   return toDomain(unwrap(result));
 }
 
+/** メモを更新する(MEM-61)。 */
+export async function update(
+  client: RecodockClient,
+  noteId: string,
+  input: Partial<UpsertNoteInput>,
+): Promise<NoteRecord> {
+  const result = await client
+    .from('notes')
+    .update({
+      ...(input.title !== undefined && { title: input.title }),
+      ...(input.body !== undefined && { body: input.body }),
+      ...(input.tags !== undefined && { tags: [...input.tags] }),
+      ...(input.isPinned !== undefined && { is_pinned: input.isPinned }),
+    })
+    .eq('id', noteId)
+    .select(COLUMNS)
+    .single();
+  return toDomain(unwrap(result));
+}
+
+/** 1 件取得する(MEM-61)。 */
+export async function get(client: RecodockClient, noteId: string): Promise<NoteRecord> {
+  const result = await client.from('notes').select(COLUMNS).eq('id', noteId).single();
+  return toDomain(unwrap(result));
+}
+
 /** ピン留めを切り替える(MEM-62)。 */
 export async function setPinned(
   client: RecodockClient,
