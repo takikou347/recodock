@@ -1,0 +1,42 @@
+/* 共通カード: 実線 1.5px ＋ オフセット影(1a 共通部品)。 */
+
+.card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+}
+
+/* 一覧の行として使う小さめのカード */
+.row {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-sm);
+  padding: 13px var(--space-4);
+}
+
+/* 中身が自前でパディングを持つ場合(テーブル・リスト) */
+.flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* モジュール淡色で塗るカード(サマリなど) */
+.toned {
+  background: var(--tone-bg);
+  border-color: var(--tone-line);
+}
+
+.clickable {
+  display: block;
+  width: 100%;
+  text-align: left;
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.clickable:hover {
+  box-shadow: 5px 5px 0 var(--color-border);
+  transform: translate(-1px, -1px);
+}

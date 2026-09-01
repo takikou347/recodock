@@ -1,0 +1,179 @@
+/*
+ * デザイントークン。Claude Design の成果物
+ * (develop-docs 由来の「Recodock Screens.dc.html」1a 基盤 / 1e UIパターン)から抽出して同期する。
+ *
+ * コーディング規約 6: 色・タイポグラフィ・余白・角丸・影はこのファイルの CSS 変数のみを参照し、
+ * コンポーネント内に色コードを直接書かない。
+ * ライトモードのみ対応(01_screen_design.md 3.1)。ダークモードはこのファイルの差し替えで行う。
+ */
+
+:root {
+  /* ─────────── 面と文字(ベース) ─────────── */
+  --color-canvas: #efe8db; /* キャンバス(画面の外側) */
+  --color-bg: #fbf7f0; /* 画面の地 */
+  --color-surface: #ffffff; /* カード */
+  --color-surface-raised: #fffdf8; /* サイドバー・モーダル・シート */
+  --color-surface-sunken: #f6f1e7; /* 前後月セルなど沈んだ面 */
+  --color-surface-muted: #f4eee2; /* 選択中の行・検索ボックス */
+  --color-surface-strong: #f0e9dc; /* セグメント台座・無効面 */
+  --color-surface-pressed: #ede4d4; /* 押下中のセカンダリ面 */
+  --color-surface-hover: #f9f4ea; /* ホバー中のブロック面 */
+
+  --color-ink: #2f2a26; /* 主文字・実線 */
+  --color-ink-body: #413a34; /* 長文本文 */
+  --color-ink-muted: #7a716a; /* 補助文字 */
+  --color-ink-subtle: #a79c91; /* ラベル・プレースホルダ */
+  --color-ink-faint: #c4baae; /* 前後月の日付 */
+  --color-ink-inverse: #fbf7f0; /* 濃色面上の文字 */
+  --color-ink-inverse-muted: #bdb4aa; /* 濃色面上の補助文字 */
+
+  --color-border: #e7dfd3; /* 既定の枠線 */
+  --color-border-strong: #d8cebe; /* 画面フレーム */
+  --color-border-dashed: #c9beae; /* 破線(入力欄・空状態) */
+  --color-border-faint: #f0e9dc; /* 区切り線 */
+  --color-border-row: #ede5d8; /* カレンダーセル */
+  --color-grabber: #e0d7c9; /* ボトムシートのグラバー */
+
+  --color-accent: #ee8a6e; /* FAB・今日 */
+  --color-accent-ink: #5e2a19;
+  --color-avatar: #ead9c6; /* 既定アバター面 */
+
+  --color-scrim: rgb(47 42 38 / 34%); /* オーバーレイのスクリム */
+
+  /* ─────────── モジュールカラー(パステル) ───────────
+   * 淡色(bg)=面 / line=枠 / fg=文字 / solid=線・アイコン・プライマリボタン
+   * calendar_entries.module との対応は ModuleDefinition.badgeColor(= solid)。
+   */
+  --color-calendar-bg: #dceaf8;
+  --color-calendar-line: #bfd8f2;
+  --color-calendar-fg: #38618c;
+  --color-calendar-solid: #4e7fb5;
+
+  --color-money-bg: #dff1e6;
+  --color-money-line: #b9e3cb;
+  --color-money-fg: #2f6e51;
+  --color-money-solid: #3f8c68;
+
+  --color-diary-bg: #fbe1d8;
+  --color-diary-line: #f8c8b8;
+  --color-diary-fg: #a9512f;
+  --color-diary-solid: #c86b4e;
+
+  --color-items-bg: #eadff7;
+  --color-items-line: #d6c9f0;
+  --color-items-fg: #61479b;
+  --color-items-solid: #7b5fb8;
+
+  --color-notes-bg: #fbf0ce;
+  --color-notes-line: #f6e3a8;
+  --color-notes-fg: #856a1f;
+  --color-notes-solid: #a8862b;
+  --color-notes-surface: #fffbec; /* ピン留めメモの面 */
+
+  --color-map-bg: #d7eff0;
+  --color-map-line: #aedde0;
+  --color-map-fg: #26707a;
+  --color-map-solid: #2e858e;
+
+  /* 現在のモジュール色。AppShell / モジュールのルート要素が上書きする。
+   * 既定はコアモジュール(カレンダー)。 */
+  --color-module-bg: var(--color-calendar-bg);
+  --color-module-line: var(--color-calendar-line);
+  --color-module-fg: var(--color-calendar-fg);
+  --color-module-solid: var(--color-calendar-solid);
+
+  /* ─────────── 意味色 ─────────── */
+  --color-danger: #c86b4e;
+  --color-danger-hover: #d67a5e;
+  --color-danger-active: #a9512f;
+  --color-danger-bg: #fff9f6;
+  --color-income: #2f6e51; /* 収入は緑＋ */
+  --color-success: #3f8c68;
+  --color-success-ink: #245a42; /* 淡緑面上の文字 */
+  --color-sunday: #c86b4e;
+  --color-saturday: #4e7fb5;
+
+  /* ─────────── タイポグラフィ ─────────── */
+  --font-sans:
+    'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, system-ui, sans-serif;
+  /* 金額・日付は等幅(tabular)で桁を揃える */
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 20px;
+  --font-size-4xl: 24px;
+  --font-size-5xl: 26px;
+  --font-size-6xl: 30px;
+  --font-size-7xl: 32px;
+  --font-size-8xl: 40px;
+  --font-size-9xl: 44px;
+
+  --font-weight-body: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-heading: 800;
+
+  --letter-spacing-heading: -0.015em;
+  --letter-spacing-caps: 0.1em;
+
+  --line-height-tight: 1.15;
+  --line-height-heading: 1.3;
+  --line-height-base: 1.6;
+  --line-height-prose: 1.9;
+
+  /* ─────────── スペーシング(4の倍数) ─────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+
+  /* ─────────── 角丸 ─────────── */
+  --radius-sm: 9px; /* 小(バッジ・アイコンボタン) */
+  --radius-md: 12px; /* 行・入力欄 */
+  --radius-lg: 16px; /* カード */
+  --radius-xl: 22px; /* 面(モーダル・画面) */
+  --radius-pill: 999px; /* ボタン・チップ */
+
+  /* ─────────── 影(エレベーション) ─────────── */
+  --shadow-card: 4px 4px 0 #efe7da; /* 静的カード */
+  --shadow-card-sm: 3px 3px 0 #efe7da;
+  --shadow-action: 3px 3px 0 var(--color-ink); /* 押せる要素 */
+  --shadow-action-hover: 5px 5px 0 var(--color-ink);
+  --shadow-overlay: 8px 8px 0 var(--color-ink); /* モーダル */
+  --shadow-dropdown: 5px 5px 0 rgb(47 42 38 / 18%);
+  --shadow-toast: 4px 4px 0 rgb(47 42 38 / 25%);
+  --shadow-menu: 6px 6px 0 rgb(47 42 38 / 22%);
+  --shadow-frame: 0 26px 60px rgb(47 42 38 / 16%);
+  /* 入力欄のフォーカス影はモジュールの淡色 */
+  --shadow-focus: 3px 3px 0 var(--color-module-bg);
+
+  /* ─────────── レイアウト ─────────── */
+  --sidebar-width: 236px;
+  --rail-width: 76px;
+  --detail-width: 322px;
+  --modal-width: 560px;
+  --border-width: 1.5px;
+  /* タップ領域の最小寸法(SP/iOS) */
+  --tap-target: 44px;
+
+  /* ─────────── z-index ─────────── */
+  --z-dropdown: 100;
+  --z-sheet: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+}
+
+/* ブレークポイント: SP < 768 ≤ タブレット < 1120 ≤ PC。
+ * メディアクエリでは変数を使えないため、値の変更時はここのコメントと
+ * 各 *.module.css の @media を合わせて更新する。 */

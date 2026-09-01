@@ -1,0 +1,48 @@
+/* 1e 選択コントロール: チェックボックス／ラジオ。 */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-ink-muted);
+}
+
+.checked {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+.box {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-dashed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-surface);
+}
+
+.checked .box {
+  background: var(--color-module-solid);
+  border-color: var(--color-ink);
+}
+
+.radio {
+  border-radius: var(--radius-pill);
+}
+
+.checked .radio {
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+}
+
+.dot {
+  width: 11px;
+  height: 11px;
+  border-radius: var(--radius-pill);
+  background: var(--color-module-solid);
+}

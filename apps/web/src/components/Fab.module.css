@@ -1,0 +1,104 @@
+/* 1e FAB: 記録の追加。全画面共通でアクセント色。PC=右下 24px、SP=右下 16px。 */
+
+.fab {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-surface);
+  border: var(--border-width) solid var(--color-ink);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-dropdown);
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.fab:hover {
+  box-shadow: 6px 6px 0 var(--color-ink);
+  transform: translate(-1px, -1px);
+}
+
+.fab:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+@media (width < 768px) {
+  .fab {
+    right: var(--space-4);
+    bottom: var(--space-4);
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* FAB のモジュール選択メニュー */
+.menu {
+  position: absolute;
+  right: 0;
+  bottom: 72px;
+  min-width: 208px;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dropdown);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  text-align: left;
+  width: 100%;
+}
+
+.menuItem:hover {
+  background: var(--color-surface-muted);
+}
+
+.menuIcon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--tone-bg);
+  border: var(--border-width) solid var(--tone-line);
+  color: var(--tone-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anchor {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: var(--z-dropdown);
+}
+
+@media (width < 768px) {
+  .anchor {
+    right: var(--space-4);
+    bottom: var(--space-4);
+  }
+}
+
+.anchor .fab {
+  position: static;
+}

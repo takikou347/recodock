@@ -1,0 +1,67 @@
+/* 1e 選択コントロール: トグル。ON はモジュール淡色＋インク枠。 */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.track {
+  width: 52px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--color-border-dashed);
+  background: var(--color-surface-strong);
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.knob {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-dashed);
+  transition: transform 120ms ease;
+}
+
+.on .track {
+  background: var(--color-module-line);
+  border-color: var(--color-ink);
+}
+
+.on .knob {
+  border-color: var(--color-ink);
+  transform: translateX(22px);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* CAL-12 の「終日」など小さいトグル */
+.sm .track {
+  width: 44px;
+  height: 26px;
+}
+
+.sm .knob {
+  width: 19px;
+  height: 19px;
+}
+
+.sm.on .knob {
+  transform: translateX(18px);
+}

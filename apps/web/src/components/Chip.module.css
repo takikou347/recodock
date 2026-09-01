@@ -1,0 +1,47 @@
+/* 1e 選択コントロール: フィルタチップ。
+ * 「すべて」= インク面、モジュール別 = 淡色面、未選択 = 白＋枠。 */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.neutral {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-ink-muted);
+  font-weight: var(--font-weight-body);
+}
+
+.neutral:hover {
+  color: var(--color-ink);
+}
+
+/* 選択中の「すべて」 */
+.selected {
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+}
+
+/* モジュール色のチップ(選択中) */
+.toned {
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm {
+  padding: 5px 11px;
+  font-size: var(--font-size-xs);
+}

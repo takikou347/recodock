@@ -1,0 +1,64 @@
+/* ITM-50 持ち物一覧。写真つきのカードをグリッドで並べる。 */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  align-content: start;
+}
+
+@media (width < 1120px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (width < 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.thumb {
+  height: 82px;
+  background: var(--color-items-bg);
+  color: var(--color-items-solid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.body {
+  display: block;
+  padding: 10px var(--space-3);
+}
+
+.name {
+  display: block;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 3px var(--space-2);
+  border-radius: 7px;
+  background: var(--color-surface-strong);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.badgeWarning {
+  background: var(--color-diary-bg);
+  color: var(--color-danger-active);
+}
