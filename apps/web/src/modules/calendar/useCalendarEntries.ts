@@ -10,12 +10,17 @@ import {
   queryKeys,
 } from '@recodock/shared';
 
+import { useUserModules } from '../../core/userModules';
 import { monthGridRange, monthIsoRange, toDateKey, toMonthKey } from '../../lib/monthRange';
 import { supabase } from '../../lib/supabase';
 
 /** 日付セルに置く予定(CAL-10)。繰り返しは展開後の1回ぶん。 */
 export interface CalendarEvent {
   id: string;
+  /** 元の予定(events.id)。CAL-11 詳細を開くときに使う */
+  eventId: string;
+  /** この回の発生日時(ISO)。繰り返しの例外操作(CAL-01)に使う */
+  occurrenceIso: string;
   title: string;
   /** 表示用の時刻。終日・時刻未設定は undefined */
   time?: string;
@@ -82,6 +87,8 @@ const MODULE_BRANDS: Readonly<Record<ModuleKey, string>> = {
 export interface CalendarMonthResult {
   /** YYYY-MM-DD → その日の集約 */
   daysByDate: ReadonlyMap<string, CalendarDay>;
+  /** CAL-11 詳細用に元の予定を引けるようにする */
+  eventsById: ReadonlyMap<string, CalendarEventRecord>;
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
@@ -95,6 +102,8 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
   const grid = monthGridRange(month);
   const iso = monthIsoRange(month);
 
+  const { addedKeys } = useUserModules();
+
   const entriesQuery = useQuery({
     queryKey: queryKeys.core.calendarEntries(toMonthKey(month)),
     queryFn: () => entriesRepo.listCalendarEntries(supabase, grid.from, grid.to),
@@ -103,6 +112,12 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
   const eventsQuery = useQuery({
     queryKey: queryKeys.calendar.events(toMonthKey(month)),
     queryFn: () => eventsRepo.listByRange(supabase, iso.fromIso, iso.toIso),
+  });
+
+  // 繰り返しの「この回だけ削除」(event_overrides)を展開から除外する
+  const overridesQuery = useQuery({
+    queryKey: queryKeys.calendar.event(`overrides-${toMonthKey(month)}`),
+    queryFn: () => eventsRepo.listCanceledOccurrences(supabase, iso.fromIso, iso.toIso),
   });
 
   const daysByDate = new Map<string, CalendarDay>();
@@ -114,18 +129,29 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
     return created;
   };
 
-  // 予定(繰り返しを展開してセルに置く)
+  // 予定(繰り返しを展開してセルに置く)。「この回だけ削除」は除外する(CAL-01)
   const rangeStart = new Date(iso.fromIso);
   const rangeEnd = new Date(iso.toIso);
+  const eventsById = new Map<string, CalendarEventRecord>();
+  const canceledByEvent = new Map<string, Date[]>();
+  for (const override of overridesQuery.data ?? []) {
+    const dates = canceledByEvent.get(override.eventId) ?? [];
+    dates.push(new Date(override.occurrenceIso));
+    canceledByEvent.set(override.eventId, dates);
+  }
   for (const event of eventsQuery.data ?? []) {
+    eventsById.set(event.id, event);
     for (const occurrence of expandOccurrences(
       new Date(event.startsAt),
       event.rrule,
       rangeStart,
       rangeEnd,
+      canceledByEvent.get(event.id) ?? [],
     )) {
       ensure(toDateKey(occurrence)).events.push({
         id: `${event.id}-${occurrence.toISOString()}`,
+        eventId: event.id,
+        occurrenceIso: occurrence.toISOString(),
         title: event.title,
         time: event.isAllDay ? undefined : formatTime(occurrence),
         isAllDay: event.isAllDay,
@@ -133,9 +159,11 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
     }
   }
 
-  // モジュール別の件数バッジ(予定はセルに直接出すので除く)
+  // モジュール別の件数バッジ(予定はセルに直接出すので除く)。
+  // 無効化されたモジュールの記録は表示から除外する(01_screen_design.md 4 章。データは残る: FR-01)
   for (const entry of entriesQuery.data ?? []) {
     if (entry.moduleKey === 'calendar') continue;
+    if (!addedKeys.includes(entry.moduleKey)) continue;
     const day = ensure(entry.entryDate);
     const badge = day.badges.find((b) => b.moduleKey === entry.moduleKey);
     if (badge) badge.count += 1;
@@ -144,11 +172,13 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
 
   return {
     daysByDate,
+    eventsById,
     isLoading: entriesQuery.isPending || eventsQuery.isPending,
-    isError: entriesQuery.isError || eventsQuery.isError,
+    isError: entriesQuery.isError || eventsQuery.isError || overridesQuery.isError,
     refetch: () => {
       void entriesQuery.refetch();
       void eventsQuery.refetch();
+      void overridesQuery.refetch();
     },
   };
 }
@@ -162,18 +192,21 @@ export interface TodayEntriesResult {
 /** 選択日の記録サマリ(SC-04 右ペイン)。 */
 export function useTodayEntries(date: Date): TodayEntriesResult {
   const dateKey = toDateKey(date);
+  const { addedKeys } = useUserModules();
   const query = useQuery({
     queryKey: queryKeys.core.dayEntries(dateKey),
     queryFn: () => entriesRepo.listCalendarEntries(supabase, dateKey, dateKey),
   });
 
-  const entries: TodayEntry[] = (query.data ?? []).map((entry) => ({
-    id: `${entry.moduleKey}-${entry.entryId}`,
-    moduleKey: entry.moduleKey,
-    moduleLabel: MODULE_LABELS[entry.moduleKey],
-    title: entry.title,
-    sub: MODULE_BRANDS[entry.moduleKey],
-  }));
+  const entries: TodayEntry[] = (query.data ?? [])
+    .filter((entry) => addedKeys.includes(entry.moduleKey))
+    .map((entry) => ({
+      id: `${entry.moduleKey}-${entry.entryId}`,
+      moduleKey: entry.moduleKey,
+      moduleLabel: MODULE_LABELS[entry.moduleKey],
+      title: entry.title,
+      sub: MODULE_BRANDS[entry.moduleKey],
+    }));
 
   return { entries, isLoading: query.isPending, isError: query.isError };
 }
@@ -187,6 +220,7 @@ export interface DayEntriesResult {
 /** 日別記録一覧(CAL-13)。モジュールごとにまとめて返す。 */
 export function useDayEntries(date: Date): DayEntriesResult {
   const dateKey = toDateKey(date);
+  const { addedKeys } = useUserModules();
 
   const entriesQuery = useQuery({
     queryKey: queryKeys.core.dayEntries(dateKey),
@@ -221,6 +255,7 @@ export function useDayEntries(date: Date): DayEntriesResult {
 
   for (const entry of entriesQuery.data ?? []) {
     if (entry.moduleKey === 'calendar') continue;
+    if (!addedKeys.includes(entry.moduleKey)) continue;
     push(entry.moduleKey, {
       id: entry.entryId,
       lead: '',
@@ -245,6 +280,59 @@ export function useDayEntries(date: Date): DayEntriesResult {
 /** 金額を「支出 3件 ¥3,300」のように畳んで見せるための整形。 */
 export function summarizeAmount(total: number, count: number): string {
   return `支出 ${count}件 ${formatAmount(total)}`;
+}
+
+/** 予定を更新する(CAL-12 の編集。繰り返しはすべての回に反映)。 */
+export function useUpdateEvent() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    CalendarEventRecord,
+    Error,
+    { eventId: string; input: Partial<CreateEventInput> }
+  >({
+    mutationFn: ({ eventId, input }) => eventsRepo.update(supabase, eventId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** 予定を削除する(単発、または繰り返しのすべての回)。 */
+export function useDeleteEvent() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (eventId) => eventsRepo.remove(supabase, eventId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** 繰り返しの「この回だけ削除」(event_overrides: CAL-01)。 */
+export function useCancelOccurrence(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { eventId: string; occurrenceIso: string }>({
+    mutationFn: ({ eventId, occurrenceIso }) => {
+      if (!userId) throw new Error('ログインが必要です');
+      return eventsRepo.cancelOccurrence(supabase, userId, eventId, occurrenceIso);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      void queryClient.invalidateQueries({ queryKey: ['core'] });
+    },
+  });
+}
+
+/** 予定のリマインド設定を取得する(CAL-11)。 */
+export function useEventReminders(eventId: string | undefined): readonly number[] {
+  const query = useQuery({
+    queryKey: queryKeys.calendar.event(`reminders-${eventId ?? ''}`),
+    queryFn: () => eventsRepo.listReminders(supabase, eventId ?? ''),
+    enabled: Boolean(eventId),
+  });
+  return query.data ?? [];
 }
 
 /** 予定を作成する(CAL-12)。成功したらカレンダー系のクエリを再取得する。 */

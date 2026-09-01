@@ -84,3 +84,27 @@
     padding-bottom: 0;
   }
 }
+
+/* 日付＋時刻の 2 段 */
+.dateTimePair {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeInput {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-base);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+}
+
+.timeInput:focus {
+  outline: none;
+  border-color: var(--color-ink);
+  box-shadow: var(--shadow-focus);
+}
