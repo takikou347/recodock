@@ -1,0 +1,35 @@
+/* 1e 選択コントロール: セグメント(月／週／日)。台座はクリーム、選択中は白＋インク枠。 */
+
+.root {
+  display: inline-flex;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-strong);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.segment {
+  padding: 7px 20px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  font-size: var(--font-size-md);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.segment:hover:not(.selected) {
+  color: var(--color-ink);
+}
+
+.selected {
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+/* SP / iOS の詰めた寸法 */
+.compact .segment {
+  padding: 5px 12px;
+  font-size: var(--font-size-xs);
+}

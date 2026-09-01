@@ -1,0 +1,81 @@
+/* 1e 入力欄(通常／フォーカス／エラー／無効)。
+ * ラベル 13px/700 を上置き。ヘルパー・エラーは 12px。フォーカス影はモジュールの淡色。 */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.labelAside {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-module-solid);
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-base);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.input::placeholder {
+  color: var(--color-ink-subtle);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-ink);
+  box-shadow: var(--shadow-focus);
+}
+
+.hasError .input {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.hasError .input:focus {
+  box-shadow: none;
+}
+
+.input:disabled {
+  background: var(--color-surface-strong);
+  color: var(--color-ink-subtle);
+  cursor: not-allowed;
+}
+
+.helper {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+
+.error {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger-active);
+}
+
+/* 金額・日付など桁を揃える入力 */
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+}
