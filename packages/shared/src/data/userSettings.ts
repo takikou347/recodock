@@ -2,8 +2,11 @@
 import type { RecodockClient } from '../supabase/client';
 import { toAppError, unwrapVoid } from './errors';
 
-/** 画面で扱う設定キー。DB は任意の key を許すが、UI が使うものはここに集める。 */
-export type UserSettingKey = 'biometric_lock' | 'notifications';
+/**
+ * 画面で扱う設定キー。DB は任意の key を許すが、UI が使うものはここに集める。
+ * 生体認証ロック(NFR-S6)は端末ローカル設定で DB には持たない(02_data_model.md 3.1)。
+ */
+export type UserSettingKey = 'notifications' | 'default_reminder_minutes';
 
 /** 設定を key → 値(真偽値)の形で読む。未設定のキーは既定値にフォールバックする。 */
 export async function listFlags(
