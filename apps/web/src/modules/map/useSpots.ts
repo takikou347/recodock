@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { SpotStatus as RepoSpotStatus } from '@recodock/shared';
+import type { SpotRecord } from '@recodock/shared';
 import { entriesRepo, formatDateValue, queryKeys, spotsRepo } from '@recodock/shared';
 
 import { supabase } from '../../lib/supabase';
@@ -15,6 +16,8 @@ export interface Spot {
   x: number;
   y: number;
   entryCount: number;
+  /** スポット行(MAP-71/72 へ渡す)。日記由来のピンは undefined */
+  raw?: SpotRecord;
 }
 
 /** 表示上の状態。スポットの visited/wishlist に、日記由来のピンを足す。 */
@@ -42,8 +45,8 @@ function normalize(values: readonly number[]): (value: number) => number {
   return (value) => PIN_INSET + ((value - min) / span) * (100 - PIN_INSET * 2);
 }
 
-/** スポット一覧を返す(MAP-70)。status を渡すとその状態だけ返す。 */
-export function useSpots(status: SpotStatus | 'all'): SpotsResult {
+/** スポット一覧を返す(MAP-70)。status とキーワード(場所名)で絞り込む。 */
+export function useSpots(status: SpotStatus | 'all', keyword = ''): SpotsResult {
   const spotsQuery = useQuery({
     queryKey: queryKeys.map.spots('all'),
     queryFn: () => spotsRepo.list(supabase),
@@ -92,6 +95,7 @@ export function useSpots(status: SpotStatus | 'all'): SpotsResult {
       x: toX(spot.longitude),
       y: 100 - toY(spot.latitude),
       entryCount: entryCounts.get(spot.id) ?? 1,
+      raw: spot,
     })),
     ...diaryPins.map((pin) => ({
       id: pin.entryId,
@@ -110,8 +114,11 @@ export function useSpots(status: SpotStatus | 'all'): SpotsResult {
     diary: all.filter((spot) => spot.status === 'diary').length,
   };
 
+  const trimmed = keyword.trim();
+  const byStatus = status === 'all' ? all : all.filter((spot) => spot.status === status);
+
   return {
-    spots: status === 'all' ? all : all.filter((spot) => spot.status === status),
+    spots: trimmed ? byStatus.filter((spot) => spot.name.includes(trimmed)) : byStatus,
     counts,
     isLoading: spotsQuery.isPending || entriesQuery.isPending,
     isError: spotsQuery.isError || entriesQuery.isError,

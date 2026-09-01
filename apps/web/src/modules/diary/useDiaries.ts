@@ -179,6 +179,20 @@ export function useCreateDiary(userId: string | undefined) {
   });
 }
 
+/** 「1年前の今日」の日記(DIA-04)。 */
+export function useDiaryOneYearAgo(today: Date): DiarySummary | undefined {
+  const target = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+  const dateKey = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(
+    target.getDate(),
+  ).padStart(2, '0')}`;
+  const query = useQuery({
+    queryKey: queryKeys.diary.list(`one-year-ago-${dateKey}`),
+    queryFn: () => diariesRepo.listByDate(supabase, dateKey),
+  });
+  const first = query.data?.[0];
+  return first ? toSummary(first) : undefined;
+}
+
 /** 日記を削除する(DIA-41)。 */
 export function useDeleteDiary() {
   const queryClient = useQueryClient();

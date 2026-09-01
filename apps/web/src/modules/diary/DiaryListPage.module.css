@@ -338,3 +338,28 @@
     margin: 0 0 14px;
   }
 }
+
+.listTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* DIA-04「1年前の今日」の導線 */
+.oneYearAgo {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-diary-bg);
+  border: var(--border-width) solid var(--color-diary-line);
+  color: var(--color-diary-fg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

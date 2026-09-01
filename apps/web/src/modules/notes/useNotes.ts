@@ -67,12 +67,3 @@ export function useCreateNote(userId: string | undefined) {
     },
   });
 }
-
-/** ピン留めを切り替える(MEM-62)。 */
-export function useTogglePinned() {
-  const queryClient = useQueryClient();
-  return useMutation<void, Error, { noteId: string; isPinned: boolean }>({
-    mutationFn: ({ noteId, isPinned }) => notesRepo.setPinned(supabase, noteId, isPinned),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notes'] }),
-  });
-}

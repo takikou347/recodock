@@ -8,7 +8,9 @@ import { ErrorState } from '../../components/ErrorState';
 import { Icon } from '../../components/icons/Icon';
 import { Skeleton } from '../../components/Skeleton';
 import { moduleThemeClass } from '../../lib/moduleTheme';
-import type { SpotStatus } from './useSpots';
+import { SpotDetailModal } from './SpotDetailModal';
+import { SpotEditModal } from './SpotEditModal';
+import type { Spot, SpotStatus } from './useSpots';
 import { useSpots } from './useSpots';
 
 import styles from './MapPage.module.css';
@@ -30,22 +32,32 @@ const PIN_COLOR_VARS: Readonly<Record<SpotStatus, string>> = {
  */
 export function MapPage() {
   const [status, setStatus] = useState<SpotStatus | 'all'>('all');
+  const [keyword, setKeyword] = useState('');
   const [selectedSpotId, setSelectedSpotId] = useState<string>();
-  const { spots, counts, isLoading, isError } = useSpots(status);
+  const [detailSpot, setDetailSpot] = useState<Spot>();
+  const [editSpot, setEditSpot] = useState<Spot | 'new'>();
+  const { spots, counts, isLoading, isError } = useSpots(status, keyword);
 
   const selectedSpot = spots.find((spot) => spot.id === selectedSpotId) ?? spots[0];
 
   return (
     <div className={[styles.root, moduleThemeClass('map')].join(' ')}>
       <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <Icon name="search" size={18} />
-          <input
-            className={styles.searchInput}
-            type="search"
-            placeholder="スポットを検索"
-            aria-label="スポットを検索"
-          />
+        <div className={styles.toolbarRow}>
+          <div className={styles.searchBox}>
+            <Icon name="search" size={18} />
+            <input
+              className={styles.searchInput}
+              type="search"
+              value={keyword}
+              placeholder="スポットを検索"
+              aria-label="スポットを検索"
+              onChange={(event) => setKeyword(event.target.value)}
+            />
+          </div>
+          <Button variant="primary" icon="plus" onClick={() => setEditSpot('new')}>
+            スポットを追加
+          </Button>
         </div>
         <div className={styles.filters}>
           <Chip isSelected={status === 'all'} onClick={() => setStatus('all')}>
@@ -132,13 +144,27 @@ export function MapPage() {
                 <p className={styles.spotName}>{selectedSpot.name}</p>
                 <p className={styles.spotSummary}>{selectedSpot.summary}</p>
               </div>
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" onClick={() => setDetailSpot(selectedSpot)}>
                 詳細
               </Button>
             </div>
           ) : null}
         </div>
       )}
+      <SpotDetailModal
+        isOpen={Boolean(detailSpot)}
+        spot={detailSpot?.raw}
+        onClose={() => setDetailSpot(undefined)}
+        onEdit={() => {
+          setEditSpot(detailSpot ?? 'new');
+          setDetailSpot(undefined);
+        }}
+      />
+      <SpotEditModal
+        isOpen={editSpot !== undefined}
+        spot={editSpot === 'new' ? undefined : editSpot?.raw}
+        onClose={() => setEditSpot(undefined)}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -10,7 +11,7 @@ import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../core/auth';
 import { moduleThemeClass } from '../../lib/moduleTheme';
-import { useCreateNote, useNotes, useTogglePinned } from './useNotes';
+import { useCreateNote, useNotes } from './useNotes';
 
 import layout from '../../core/pageLayout.module.css';
 import styles from './NotesListPage.module.css';
@@ -21,13 +22,14 @@ export function NotesListPage() {
   const { user } = useAuth();
   const { pinnedNotes, notes, totalCount, isLoading, isError } = useNotes();
   const createNote = useCreateNote(user?.id);
-  const togglePinned = useTogglePinned();
+  const navigate = useNavigate();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const onCreate = async (title: string) => {
-    await createNote.mutateAsync({ title, body: '' });
+    const created = await createNote.mutateAsync({ title, body: '' });
     showToast({ message: 'メモを作成しました' });
+    navigate(`/notes/${created.id}`);
   };
 
   return (
@@ -70,7 +72,7 @@ export function NotesListPage() {
                   <Card
                     key={note.id}
                     className={styles.pinnedCard}
-                    onClick={() => togglePinned.mutate({ noteId: note.id, isPinned: false })}
+                    onClick={() => navigate(`/notes/${note.id}`)}
                   >
                     <span className={styles.pinnedHead}>
                       <span className={styles.pinnedTitle}>{note.title}</span>
@@ -94,7 +96,7 @@ export function NotesListPage() {
                   key={note.id}
                   type="button"
                   className={styles.row}
-                  onClick={() => togglePinned.mutate({ noteId: note.id, isPinned: true })}
+                  onClick={() => navigate(`/notes/${note.id}`)}
                 >
                   <span className={styles.rowBody}>
                     <span className={styles.rowTitle}>{note.title}</span>

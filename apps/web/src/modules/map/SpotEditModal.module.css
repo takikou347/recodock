@@ -1,0 +1,42 @@
+/* MAP-72 スポット作成・編集。 */
+
+.statusSwitch {
+  display: flex;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-strong);
+  border: var(--border-width) solid var(--color-border);
+  align-self: flex-start;
+}
+
+.statusOption {
+  padding: 7px 20px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  font-size: var(--font-size-md);
+  color: var(--color-ink-muted);
+}
+
+.statusSelected {
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+.fieldLabel {
+  display: block;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 6px;
+}
+
+.pairRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
