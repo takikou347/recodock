@@ -1,8 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { AppError, formatTime, storageRepo } from '@recodock/shared';
+import { AppError, formatTime, queryKeys, storageRepo } from '@recodock/shared';
 
 import type { IconName } from '../../components/icons/Icon';
 import { Icon } from '../../components/icons/Icon';
@@ -11,7 +12,7 @@ import { useAuth } from '../../core/auth';
 import { moduleThemeClass } from '../../lib/moduleTheme';
 import { supabase } from '../../lib/supabase';
 import type { DiaryBlock, ImageAlign } from './useDiaries';
-import { serializeBlocks, useDiary, useSaveDiary } from './useDiaries';
+import { serializeBlocks, useDiary, useDiaryPhotoUrls, useSaveDiary } from './useDiaries';
 
 import styles from './DiaryEditorPage.module.css';
 
@@ -105,6 +106,8 @@ export function DiaryEditorPage() {
   const diary = useDiary(diaryId);
   const { showToast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const photoUrls = useDiaryPhotoUrls(diary?.id);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -115,6 +118,7 @@ export function DiaryEditorPage() {
     try {
       const uploaded = await storageRepo.uploadPhoto(supabase, 'diary-photos', user.id, file);
       const photo = await storageRepo.addDiaryPhoto(supabase, user.id, diary.id, uploaded.path, 0);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diary.photos(diary.id) });
       commit((current) => [
         ...current,
         {
@@ -154,7 +158,7 @@ export function DiaryEditorPage() {
         setHistory((past) => [...past, current]);
         return updater(current);
       });
-      setSavedAt(new Date());
+      isDirty.current = true;
     },
     [],
   );
@@ -173,6 +177,7 @@ export function DiaryEditorPage() {
       const previous = past[past.length - 1];
       if (!previous) return past;
       setBlocks(previous);
+      isDirty.current = true;
       return past.slice(0, -1);
     });
   };
@@ -290,13 +295,17 @@ export function DiaryEditorPage() {
               value={title}
               placeholder="タイトル"
               aria-label="日記のタイトル"
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={(event) => {
+                isDirty.current = true;
+                setTitle(event.target.value);
+              }}
             />
 
             {blocks.map((block) => (
               <BlockRow
                 key={block.id}
                 block={block}
+                photoUrl={block.kind === 'image' ? photoUrls[block.assetId] : undefined}
                 isHovered={hoveredBlockId === block.id}
                 isBubbleOpen={bubbleBlockId === block.id}
                 isSlashOpen={slashBlockId === block.id}
@@ -394,6 +403,8 @@ interface BlockRowProps {
   isBubbleOpen: boolean;
   isSlashOpen: boolean;
   isImageSelected: boolean;
+  /** 画像ブロックの署名 URL(取得前・失効時は undefined) */
+  photoUrl?: string;
   onHover: (blockId: string | undefined) => void;
   onChange: (block: DiaryBlock) => void;
   onInsertAfter: (block: DiaryBlock) => void;
@@ -411,6 +422,7 @@ function BlockRow({
   isBubbleOpen,
   isSlashOpen,
   isImageSelected,
+  photoUrl,
   onHover,
   onChange,
   onInsertAfter,
@@ -447,6 +459,7 @@ function BlockRow({
         {block.kind === 'image' ? (
           <ImageBlock
             block={block}
+            photoUrl={photoUrl}
             isSelected={isImageSelected}
             onSelect={onSelectImage}
             onChange={onChange}
@@ -582,6 +595,8 @@ function SelectionBubble() {
 
 interface ImageBlockProps {
   block: Extract<DiaryBlock, { kind: 'image' }>;
+  /** 署名 URL(取得前は undefined でプレースホルダを出す) */
+  photoUrl?: string;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (block: DiaryBlock) => void;
@@ -589,7 +604,14 @@ interface ImageBlockProps {
 }
 
 /** 画像ブロック。選択するとリサイズハンドルと配置ツールバーが出る。 */
-function ImageBlock({ block, isSelected, onSelect, onChange, onRemove }: ImageBlockProps) {
+function ImageBlock({
+  block,
+  photoUrl,
+  isSelected,
+  onSelect,
+  onChange,
+  onRemove,
+}: ImageBlockProps) {
   const alignClass =
     block.align === 'center'
       ? styles.figureAlignCenter
@@ -639,8 +661,18 @@ function ImageBlock({ block, isSelected, onSelect, onChange, onRemove }: ImageBl
         aria-pressed={isSelected}
         onClick={onSelect}
       >
-        <Icon name="image" size={28} />
-        <span className={styles.figureName}>{block.fileName}</span>
+        {photoUrl ? (
+          <img
+            className={styles.figureImage}
+            src={photoUrl}
+            alt={block.caption || block.fileName}
+          />
+        ) : (
+          <>
+            <Icon name="image" size={28} />
+            <span className={styles.figureName}>{block.fileName}</span>
+          </>
+        )}
         {isSelected ? (
           <>
             <span className={[styles.resizeHandle, styles.resizeTopLeft].join(' ')} />

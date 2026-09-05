@@ -18,6 +18,7 @@ import {
   useDiaries,
   useDiary,
   useDiaryOneYearAgo,
+  useDiaryPhotoUrls,
 } from './useDiaries';
 
 import styles from './DiaryListPage.module.css';
@@ -153,6 +154,7 @@ interface DiaryDetailProps {
 
 /** DIA-41 日記詳細。本文の流れの中に写真を置く。 */
 function DiaryDetail({ diary, onEdit, onDelete }: DiaryDetailProps) {
+  const photoUrls = useDiaryPhotoUrls(diary.id);
   const moneyTone: CSSProperties = {
     '--tone-bg': 'var(--color-money-bg)',
     '--tone-line': 'var(--color-money-line)',
@@ -191,7 +193,11 @@ function DiaryDetail({ diary, onEdit, onDelete }: DiaryDetailProps) {
 
       <div className={styles.body}>
         {diary.blocks.map((block) => (
-          <DiaryBlockView key={block.id} block={block} />
+          <DiaryBlockView
+            key={block.id}
+            block={block}
+            photoUrl={block.kind === 'image' ? photoUrls[block.assetId] : undefined}
+          />
         ))}
       </div>
 
@@ -211,10 +217,12 @@ function DiaryDetail({ diary, onEdit, onDelete }: DiaryDetailProps) {
 
 interface DiaryBlockViewProps {
   block: DiaryBlock;
+  /** 画像ブロックの署名 URL(取得前は undefined でプレースホルダを出す) */
+  photoUrl?: string;
 }
 
 /** 本文ブロックの表示。画像は配置(full / center / wrap)に応じて回り込ませる。 */
-function DiaryBlockView({ block }: DiaryBlockViewProps) {
+function DiaryBlockView({ block, photoUrl }: DiaryBlockViewProps) {
   switch (block.kind) {
     case 'text':
       return <p className={styles.paragraph}>{block.text}</p>;
@@ -244,10 +252,14 @@ function DiaryBlockView({ block }: DiaryBlockViewProps) {
             : styles.figureFull;
       return (
         <figure className={figureClass}>
-          <div className={styles.imageBox}>
-            <Icon name="image" size={26} />
-            <span className={styles.imageLabel}>{block.fileName}</span>
-          </div>
+          {photoUrl ? (
+            <img className={styles.image} src={photoUrl} alt={block.caption || block.fileName} />
+          ) : (
+            <div className={styles.imageBox}>
+              <Icon name="image" size={26} />
+              <span className={styles.imageLabel}>{block.fileName}</span>
+            </div>
+          )}
           {block.caption ? (
             <figcaption className={styles.caption}>{block.caption}</figcaption>
           ) : null}
