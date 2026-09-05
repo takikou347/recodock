@@ -2,6 +2,18 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+// Node 23+ の fetch(undici)は jsdom の AbortSignal をブランドチェックで拒否するため、
+// react-router がナビゲーションごとに作る new Request(url, { signal }) が
+// TypeError になる(Node 22 の CI では通る)。jsdom 由来の signal は除外して生成する。
+// 中断の伝播はテストでは不要のため、signal は渡さない(undici が内部スロットで
+// ブランドチェックするため、jsdom の signal は instanceof では判別できない)。
+const NativeRequest = globalThis.Request;
+globalThis.Request = class extends NativeRequest {
+  constructor(input: RequestInfo | URL, init?: RequestInit) {
+    super(input, init?.signal ? { ...init, signal: undefined } : init);
+  }
+} as typeof Request;
+
 /**
  * モックはリポジトリ関数の境界でのみ行う(コーディング規約 8)。
  * supabase-js を直接モックせず、@recodock/shared が公開するリポジトリ関数を差し替える。

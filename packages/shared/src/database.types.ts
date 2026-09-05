@@ -9,54 +9,79 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export interface Database {
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       accounts: {
         Row: {
+          closing_day: number | null;
+          created_at: string;
           id: string;
-          user_id: string;
+          initial_balance: number;
+          is_archived: boolean;
+          kind: string;
           ledger_id: string;
           name: string;
-          kind: string;
-          initial_balance: number;
-          closing_day: number | null;
-          payment_day: number | null;
           payment_account_id: string | null;
-          is_archived: boolean;
+          payment_day: number | null;
           sort_order: number;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
+          closing_day?: number | null;
+          created_at?: string;
           id?: string;
-          user_id: string;
+          initial_balance?: number;
+          is_archived?: boolean;
+          kind: string;
           ledger_id: string;
           name: string;
-          kind: string;
-          initial_balance?: number;
-          closing_day?: number | null;
-          payment_day?: number | null;
           payment_account_id?: string | null;
-          is_archived?: boolean;
+          payment_day?: number | null;
           sort_order?: number;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
+          closing_day?: number | null;
+          created_at?: string;
           id?: string;
-          user_id?: string;
+          initial_balance?: number;
+          is_archived?: boolean;
+          kind?: string;
           ledger_id?: string;
           name?: string;
-          kind?: string;
-          initial_balance?: number;
-          closing_day?: number | null;
-          payment_day?: number | null;
           payment_account_id?: string | null;
-          is_archived?: boolean;
+          payment_day?: number | null;
           sort_order?: number;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -77,34 +102,34 @@ export interface Database {
       };
       budgets: {
         Row: {
+          amount: number;
+          category_id: string | null;
+          created_at: string;
           id: string;
-          user_id: string;
           ledger_id: string;
           month: string;
-          category_id: string | null;
-          amount: number;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
+          amount: number;
+          category_id?: string | null;
+          created_at?: string;
           id?: string;
-          user_id: string;
           ledger_id: string;
           month: string;
-          category_id?: string | null;
-          amount: number;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
+          amount?: number;
+          category_id?: string | null;
+          created_at?: string;
           id?: string;
-          user_id?: string;
           ledger_id?: string;
           month?: string;
-          category_id?: string | null;
-          amount?: number;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -125,37 +150,37 @@ export interface Database {
       };
       categories: {
         Row: {
+          created_at: string;
           id: string;
-          user_id: string;
+          is_preset: boolean;
+          kind: string;
           ledger_id: string;
           name: string;
-          kind: string;
-          is_preset: boolean;
           sort_order: number;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
+          created_at?: string;
           id?: string;
-          user_id: string;
+          is_preset?: boolean;
+          kind: string;
           ledger_id: string;
           name: string;
-          kind: string;
-          is_preset?: boolean;
           sort_order?: number;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
+          created_at?: string;
           id?: string;
-          user_id?: string;
+          is_preset?: boolean;
+          kind?: string;
           ledger_id?: string;
           name?: string;
-          kind?: string;
-          is_preset?: boolean;
           sort_order?: number;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -169,40 +194,40 @@ export interface Database {
       };
       diaries: {
         Row: {
-          id: string;
-          user_id: string;
-          entry_date: string;
           body: string;
-          mood: string | null;
+          created_at: string;
+          entry_date: string;
+          id: string;
           latitude: number | null;
           longitude: number | null;
+          mood: string | null;
           spot_id: string | null;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          entry_date: string;
           body: string;
-          mood?: string | null;
+          created_at?: string;
+          entry_date: string;
+          id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          mood?: string | null;
           spot_id?: string | null;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          entry_date?: string;
           body?: string;
-          mood?: string | null;
+          created_at?: string;
+          entry_date?: string;
+          id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          mood?: string | null;
           spot_id?: string | null;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -216,31 +241,31 @@ export interface Database {
       };
       diary_photos: {
         Row: {
-          id: string;
-          user_id: string;
-          diary_id: string;
-          storage_path: string;
-          sort_order: number;
           created_at: string;
+          diary_id: string;
+          id: string;
+          sort_order: number;
+          storage_path: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          diary_id: string;
-          storage_path: string;
-          sort_order?: number;
           created_at?: string;
+          diary_id: string;
+          id?: string;
+          sort_order?: number;
+          storage_path: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          diary_id?: string;
-          storage_path?: string;
-          sort_order?: number;
           created_at?: string;
+          diary_id?: string;
+          id?: string;
+          sort_order?: number;
+          storage_path?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -254,46 +279,46 @@ export interface Database {
       };
       event_overrides: {
         Row: {
-          id: string;
-          user_id: string;
-          event_id: string;
-          occurrence_date: string;
-          is_canceled: boolean;
-          title: string | null;
-          starts_at: string | null;
+          created_at: string;
           ends_at: string | null;
+          event_id: string;
+          id: string;
+          is_canceled: boolean;
           location: string | null;
           memo: string | null;
-          created_at: string;
+          occurrence_date: string;
+          starts_at: string | null;
+          title: string | null;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          event_id: string;
-          occurrence_date: string;
-          is_canceled?: boolean;
-          title?: string | null;
-          starts_at?: string | null;
+          created_at?: string;
           ends_at?: string | null;
+          event_id: string;
+          id?: string;
+          is_canceled?: boolean;
           location?: string | null;
           memo?: string | null;
-          created_at?: string;
+          occurrence_date: string;
+          starts_at?: string | null;
+          title?: string | null;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          event_id?: string;
-          occurrence_date?: string;
-          is_canceled?: boolean;
-          title?: string | null;
-          starts_at?: string | null;
+          created_at?: string;
           ends_at?: string | null;
+          event_id?: string;
+          id?: string;
+          is_canceled?: boolean;
           location?: string | null;
           memo?: string | null;
-          created_at?: string;
+          occurrence_date?: string;
+          starts_at?: string | null;
+          title?: string | null;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -307,28 +332,28 @@ export interface Database {
       };
       event_reminders: {
         Row: {
-          id: string;
-          user_id: string;
-          event_id: string;
-          minutes_before: number;
           created_at: string;
+          event_id: string;
+          id: string;
+          minutes_before: number;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          event_id: string;
-          minutes_before: number;
           created_at?: string;
+          event_id: string;
+          id?: string;
+          minutes_before: number;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          event_id?: string;
-          minutes_before?: number;
           created_at?: string;
+          event_id?: string;
+          id?: string;
+          minutes_before?: number;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -342,124 +367,124 @@ export interface Database {
       };
       events: {
         Row: {
-          id: string;
-          user_id: string;
-          title: string;
-          starts_at: string;
+          created_at: string;
           ends_at: string;
+          id: string;
           is_all_day: boolean;
           location: string | null;
           memo: string | null;
           rrule: string | null;
           rrule_until: string | null;
-          created_at: string;
+          starts_at: string;
+          title: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          title: string;
-          starts_at: string;
+          created_at?: string;
           ends_at: string;
+          id?: string;
           is_all_day?: boolean;
           location?: string | null;
           memo?: string | null;
           rrule?: string | null;
           rrule_until?: string | null;
-          created_at?: string;
+          starts_at: string;
+          title: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          title?: string;
-          starts_at?: string;
+          created_at?: string;
           ends_at?: string;
+          id?: string;
           is_all_day?: boolean;
           location?: string | null;
           memo?: string | null;
           rrule?: string | null;
           rrule_until?: string | null;
-          created_at?: string;
+          starts_at?: string;
+          title?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       items: {
         Row: {
-          id: string;
-          user_id: string;
-          name: string;
           category: string | null;
-          tags: string[];
-          purchased_on: string | null;
-          price: number | null;
-          photo_path: string | null;
-          location: string | null;
-          warranty_expires_on: string | null;
-          replace_after: string | null;
-          memo: string | null;
           created_at: string;
+          id: string;
+          location: string | null;
+          memo: string | null;
+          name: string;
+          photo_path: string | null;
+          price: number | null;
+          purchased_on: string | null;
+          replace_after: string | null;
+          tags: string[];
           updated_at: string;
+          user_id: string;
+          warranty_expires_on: string | null;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          name: string;
           category?: string | null;
-          tags?: string[];
-          purchased_on?: string | null;
-          price?: number | null;
-          photo_path?: string | null;
-          location?: string | null;
-          warranty_expires_on?: string | null;
-          replace_after?: string | null;
-          memo?: string | null;
           created_at?: string;
+          id?: string;
+          location?: string | null;
+          memo?: string | null;
+          name: string;
+          photo_path?: string | null;
+          price?: number | null;
+          purchased_on?: string | null;
+          replace_after?: string | null;
+          tags?: string[];
           updated_at?: string;
+          user_id: string;
+          warranty_expires_on?: string | null;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          name?: string;
           category?: string | null;
-          tags?: string[];
-          purchased_on?: string | null;
-          price?: number | null;
-          photo_path?: string | null;
-          location?: string | null;
-          warranty_expires_on?: string | null;
-          replace_after?: string | null;
-          memo?: string | null;
           created_at?: string;
+          id?: string;
+          location?: string | null;
+          memo?: string | null;
+          name?: string;
+          photo_path?: string | null;
+          price?: number | null;
+          purchased_on?: string | null;
+          replace_after?: string | null;
+          tags?: string[];
           updated_at?: string;
+          user_id?: string;
+          warranty_expires_on?: string | null;
         };
         Relationships: [];
       };
       ledger_members: {
         Row: {
+          created_at: string;
           id: string;
-          user_id: string;
           ledger_id: string;
           role: string;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
+          created_at?: string;
           id?: string;
-          user_id: string;
           ledger_id: string;
           role?: string;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
+          created_at?: string;
           id?: string;
-          user_id?: string;
           ledger_id?: string;
           role?: string;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -473,142 +498,142 @@ export interface Database {
       };
       ledgers: {
         Row: {
-          id: string;
-          user_id: string;
-          name: string;
           created_at: string;
+          id: string;
+          name: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          name: string;
           created_at?: string;
+          id?: string;
+          name: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          name?: string;
           created_at?: string;
+          id?: string;
+          name?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       notes: {
         Row: {
-          id: string;
-          user_id: string;
-          title: string;
           body: string;
-          tags: string[];
-          is_pinned: boolean;
           created_at: string;
+          id: string;
+          is_pinned: boolean;
+          tags: string[];
+          title: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          title?: string;
           body?: string;
-          tags?: string[];
-          is_pinned?: boolean;
           created_at?: string;
+          id?: string;
+          is_pinned?: boolean;
+          tags?: string[];
+          title?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          title?: string;
           body?: string;
-          tags?: string[];
-          is_pinned?: boolean;
           created_at?: string;
+          id?: string;
+          is_pinned?: boolean;
+          tags?: string[];
+          title?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       push_tokens: {
         Row: {
+          created_at: string;
           id: string;
-          user_id: string;
+          last_used_at: string | null;
           platform: string;
           token: string;
-          last_used_at: string | null;
-          created_at: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
+          created_at?: string;
           id?: string;
-          user_id: string;
+          last_used_at?: string | null;
           platform: string;
           token: string;
-          last_used_at?: string | null;
-          created_at?: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
+          created_at?: string;
           id?: string;
-          user_id?: string;
+          last_used_at?: string | null;
           platform?: string;
           token?: string;
-          last_used_at?: string | null;
-          created_at?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       recurring_rules: {
         Row: {
-          id: string;
-          user_id: string;
-          ledger_id: string;
-          kind: string;
-          amount: number;
           account_id: string;
-          transfer_account_id: string | null;
+          amount: number;
           category_id: string | null;
-          memo: string | null;
-          day_of_month: number;
-          starts_on: string;
-          ends_on: string | null;
-          last_recorded_on: string | null;
           created_at: string;
+          day_of_month: number;
+          ends_on: string | null;
+          id: string;
+          kind: string;
+          last_recorded_on: string | null;
+          ledger_id: string;
+          memo: string | null;
+          starts_on: string;
+          transfer_account_id: string | null;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          ledger_id: string;
-          kind: string;
-          amount: number;
           account_id: string;
-          transfer_account_id?: string | null;
+          amount: number;
           category_id?: string | null;
-          memo?: string | null;
-          day_of_month: number;
-          starts_on: string;
-          ends_on?: string | null;
-          last_recorded_on?: string | null;
           created_at?: string;
+          day_of_month: number;
+          ends_on?: string | null;
+          id?: string;
+          kind: string;
+          last_recorded_on?: string | null;
+          ledger_id: string;
+          memo?: string | null;
+          starts_on: string;
+          transfer_account_id?: string | null;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          ledger_id?: string;
-          kind?: string;
-          amount?: number;
           account_id?: string;
-          transfer_account_id?: string | null;
+          amount?: number;
           category_id?: string | null;
-          memo?: string | null;
-          day_of_month?: number;
-          starts_on?: string;
-          ends_on?: string | null;
-          last_recorded_on?: string | null;
           created_at?: string;
+          day_of_month?: number;
+          ends_on?: string | null;
+          id?: string;
+          kind?: string;
+          last_recorded_on?: string | null;
+          ledger_id?: string;
+          memo?: string | null;
+          starts_on?: string;
+          transfer_account_id?: string | null;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -643,133 +668,133 @@ export interface Database {
       };
       scheduled_notifications: {
         Row: {
-          id: string;
-          user_id: string;
-          notify_at: string;
-          title: string;
           body: string | null;
-          source_module: string;
-          source_id: string | null;
-          status: string;
-          sent_at: string | null;
           created_at: string;
+          id: string;
+          notify_at: string;
+          sent_at: string | null;
+          source_id: string | null;
+          source_module: string;
+          status: string;
+          title: string;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          notify_at: string;
-          title: string;
           body?: string | null;
-          source_module: string;
-          source_id?: string | null;
-          status?: string;
-          sent_at?: string | null;
           created_at?: string;
+          id?: string;
+          notify_at: string;
+          sent_at?: string | null;
+          source_id?: string | null;
+          source_module: string;
+          status?: string;
+          title: string;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          notify_at?: string;
-          title?: string;
           body?: string | null;
-          source_module?: string;
-          source_id?: string | null;
-          status?: string;
-          sent_at?: string | null;
           created_at?: string;
+          id?: string;
+          notify_at?: string;
+          sent_at?: string | null;
+          source_id?: string | null;
+          source_module?: string;
+          status?: string;
+          title?: string;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       spots: {
         Row: {
+          created_at: string;
           id: string;
-          user_id: string;
-          name: string;
           latitude: number;
           longitude: number;
-          status: string;
-          visited_on: string | null;
           memo: string | null;
+          name: string;
           photo_path: string | null;
-          created_at: string;
+          status: string;
           updated_at: string;
+          user_id: string;
+          visited_on: string | null;
         };
         Insert: {
+          created_at?: string;
           id?: string;
-          user_id: string;
-          name: string;
           latitude: number;
           longitude: number;
-          status?: string;
-          visited_on?: string | null;
           memo?: string | null;
+          name: string;
           photo_path?: string | null;
-          created_at?: string;
+          status?: string;
           updated_at?: string;
+          user_id: string;
+          visited_on?: string | null;
         };
         Update: {
+          created_at?: string;
           id?: string;
-          user_id?: string;
-          name?: string;
           latitude?: number;
           longitude?: number;
-          status?: string;
-          visited_on?: string | null;
           memo?: string | null;
+          name?: string;
           photo_path?: string | null;
-          created_at?: string;
+          status?: string;
           updated_at?: string;
+          user_id?: string;
+          visited_on?: string | null;
         };
         Relationships: [];
       };
       transactions: {
         Row: {
-          id: string;
-          user_id: string;
-          ledger_id: string;
-          kind: string;
-          amount: number;
-          occurred_on: string;
           account_id: string;
-          transfer_account_id: string | null;
+          amount: number;
           category_id: string | null;
-          memo: string | null;
-          receipt_path: string | null;
           created_at: string;
+          id: string;
+          kind: string;
+          ledger_id: string;
+          memo: string | null;
+          occurred_on: string;
+          receipt_path: string | null;
+          transfer_account_id: string | null;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          ledger_id: string;
-          kind: string;
-          amount: number;
-          occurred_on: string;
           account_id: string;
-          transfer_account_id?: string | null;
+          amount: number;
           category_id?: string | null;
-          memo?: string | null;
-          receipt_path?: string | null;
           created_at?: string;
+          id?: string;
+          kind: string;
+          ledger_id: string;
+          memo?: string | null;
+          occurred_on: string;
+          receipt_path?: string | null;
+          transfer_account_id?: string | null;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          ledger_id?: string;
-          kind?: string;
-          amount?: number;
-          occurred_on?: string;
           account_id?: string;
-          transfer_account_id?: string | null;
+          amount?: number;
           category_id?: string | null;
-          memo?: string | null;
-          receipt_path?: string | null;
           created_at?: string;
+          id?: string;
+          kind?: string;
+          ledger_id?: string;
+          memo?: string | null;
+          occurred_on?: string;
+          receipt_path?: string | null;
+          transfer_account_id?: string | null;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -804,58 +829,58 @@ export interface Database {
       };
       user_modules: {
         Row: {
-          id: string;
-          user_id: string;
-          module_key: string;
-          is_enabled: boolean;
-          sort_order: number;
           created_at: string;
+          id: string;
+          is_enabled: boolean;
+          module_key: string;
+          sort_order: number;
           updated_at: string;
+          user_id: string;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          module_key: string;
-          is_enabled?: boolean;
-          sort_order?: number;
           created_at?: string;
+          id?: string;
+          is_enabled?: boolean;
+          module_key: string;
+          sort_order?: number;
           updated_at?: string;
+          user_id: string;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          module_key?: string;
-          is_enabled?: boolean;
-          sort_order?: number;
           created_at?: string;
+          id?: string;
+          is_enabled?: boolean;
+          module_key?: string;
+          sort_order?: number;
           updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
       user_settings: {
         Row: {
-          id: string;
-          user_id: string;
-          key: string;
-          value: Json;
           created_at: string;
+          id: string;
+          key: string;
           updated_at: string;
+          user_id: string;
+          value: Json;
         };
         Insert: {
-          id?: string;
-          user_id: string;
-          key: string;
-          value: Json;
           created_at?: string;
+          id?: string;
+          key: string;
           updated_at?: string;
+          user_id: string;
+          value: Json;
         };
         Update: {
-          id?: string;
-          user_id?: string;
-          key?: string;
-          value?: Json;
           created_at?: string;
+          id?: string;
+          key?: string;
           updated_at?: string;
+          user_id?: string;
+          value?: Json;
         };
         Relationships: [];
       };
@@ -863,54 +888,169 @@ export interface Database {
     Views: {
       calendar_entries: {
         Row: {
-          module: string | null;
-          entry_type: string | null;
-          entry_id: string | null;
-          user_id: string | null;
           entry_date: string | null;
+          entry_id: string | null;
+          entry_type: string | null;
+          module: string | null;
           title: string | null;
+          user_id: string | null;
         };
         Relationships: [];
       };
       map_entries: {
         Row: {
-          module: string | null;
-          entry_type: string | null;
           entry_id: string | null;
-          user_id: string | null;
+          entry_type: string | null;
           latitude: number | null;
           longitude: number | null;
+          module: string | null;
           title: string | null;
+          user_id: string | null;
         };
         Relationships: [];
       };
       search_entries: {
         Row: {
-          module: string | null;
-          entry_type: string | null;
-          entry_id: string | null;
-          user_id: string | null;
           entry_date: string | null;
-          title: string | null;
+          entry_id: string | null;
+          entry_type: string | null;
+          module: string | null;
           searchable_text: string | null;
+          title: string | null;
+          user_id: string | null;
         };
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Functions: {
+      show_limit: { Args: never; Returns: number };
+      show_trgm: { Args: { '': string }; Returns: string[] };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
-/** テーブル/ビューの行型を引くヘルパー(生成物の慣習に合わせる)。 */
-export type Tables<T extends keyof (Database['public']['Tables'] & Database['public']['Views'])> =
-  (Database['public']['Tables'] & Database['public']['Views'])[T] extends { Row: infer R }
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer R;
+    }
     ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
     : never;
 
-export type TablesInsert<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Insert'];
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
 
-export type TablesUpdate<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Update'];
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const;

@@ -7,6 +7,7 @@ import {
   formatHeadingDate,
   formatListDate,
   queryKeys,
+  storageRepo,
 } from '@recodock/shared';
 
 import { supabase } from '../../lib/supabase';
@@ -67,6 +68,17 @@ export function parseBlocks(body: string): DiaryBlock[] {
   return chunks.map((chunk, index) => {
     const id = `b-${index}`;
     const trimmed = chunk.trim();
+    const image = trimmed.match(/^!\[(.*)\]\(asset:([^?)]+)\?align=(full|center|wrap)\)$/);
+    if (image) {
+      return {
+        id,
+        kind: 'image',
+        assetId: image[2] ?? '',
+        fileName: '',
+        align: (image[3] ?? 'full') as ImageAlign,
+        caption: image[1] ?? '',
+      };
+    }
     if (trimmed.startsWith('## ')) {
       return { id, kind: 'heading', level: 2, text: trimmed.slice(3) };
     }
@@ -99,16 +111,26 @@ export function serializeBlocks(blocks: readonly DiaryBlock[]): string {
     .join('\n\n');
 }
 
-/** 本文の1行目をタイトル、続きを抜粋として扱う。 */
-function splitTitle(body: string): { title: string; excerpt: string } {
+/** 画像ブロックの保存記法(`![caption](asset:...)`)の行かどうか。 */
+function isImageNotation(line: string): boolean {
+  return /^!\[.*\]\(asset:[^)]+\)$/.test(line.trim());
+}
+
+/** 本文の1行目をタイトル、続きを抜粋・本文として扱う。 */
+function splitTitle(body: string): { title: string; excerpt: string; rest: string } {
   const [first = '', ...rest] = body.split('\n');
   const title = first.replace(/^#+\s*/, '').trim() || '(無題)';
-  return { title, excerpt: rest.join(' ').trim() || title };
+  const excerpt =
+    rest
+      .filter((line) => !isImageNotation(line))
+      .join(' ')
+      .trim() || title;
+  return { title, excerpt, rest: rest.join('\n') };
 }
 
 function toSummary(record: DiaryRecord): DiarySummary {
   const date = new Date(`${record.entryDate}T00:00:00`);
-  const { title, excerpt } = splitTitle(record.body);
+  const { title, excerpt, rest } = splitTitle(record.body);
   return {
     id: record.id,
     date: formatListDate(date),
@@ -119,7 +141,9 @@ function toSummary(record: DiaryRecord): DiarySummary {
     excerpt,
     photoCount: 0,
     placeTag: record.spotId ? '位置情報あり' : undefined,
-    blocks: parseBlocks(record.body),
+    // タイトル行は title として別管理するため、本文ブロックには含めない
+    // (含めると編集のたびに body 先頭へタイトルが重複していく)
+    blocks: parseBlocks(rest),
   };
 }
 
@@ -191,6 +215,31 @@ export function useDiaryOneYearAgo(today: Date): DiarySummary | undefined {
   });
   const first = query.data?.[0];
   return first ? toSummary(first) : undefined;
+}
+
+/**
+ * 日記写真の署名 URL を asset_id で引ける形で返す(DIA-02 / NFR-S4)。
+ * private バケットのため、表示のたびに署名 URL を発行する。
+ */
+export function useDiaryPhotoUrls(diaryId: string | undefined): Readonly<Record<string, string>> {
+  const query = useQuery({
+    queryKey: queryKeys.diary.photos(diaryId ?? ''),
+    queryFn: async () => {
+      const photos = await diariesRepo.listPhotos(supabase, diaryId ?? '');
+      const entries = await Promise.all(
+        photos.map(
+          async (photo) =>
+            [
+              photo.id,
+              await storageRepo.createSignedUrl(supabase, 'diary-photos', photo.storagePath),
+            ] as const,
+        ),
+      );
+      return Object.fromEntries(entries) as Record<string, string>;
+    },
+    enabled: Boolean(diaryId),
+  });
+  return query.data ?? {};
 }
 
 /** 日記を削除する(DIA-41)。 */

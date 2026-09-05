@@ -27,6 +27,7 @@ export const queryKeys = {
   diary: {
     list: (keyword: string) => ['diary', 'list', keyword] as const,
     detail: (diaryId: string) => ['diary', 'detail', diaryId] as const,
+    photos: (diaryId: string) => ['diary', 'photos', diaryId] as const,
   },
   items: {
     list: (category: string) => ['items', 'list', category] as const,
