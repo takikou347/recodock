@@ -46,6 +46,24 @@ pnpm -F @recodock/mobile start # iOS: Expo Go / development build
 | `pnpm test`                         | テスト(Vitest。家計簿ドメインロジックが最優先領域) |
 | `pnpm gen:types`                    | DB スキーマから TypeScript 型を生成                |
 
+## デプロイ(Web)
+
+Web は Cloudflare Pages の Git 連携でデプロイする(develop-docs の ADR-0006)。ワークフローファイルは持たず、
+`main` への push で Production(`https://recodock.pages.dev`)、それ以外のブランチ・PR で Preview
+(`https://<hash>.recodock.pages.dev`)が自動でビルドされる。設定はすべて Cloudflare のダッシュボード側にある。
+
+| 設定                                | 値                                                                                                                                |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Production branch                   | `main`                                                                                                                            |
+| Root directory                      | リポジトリ直下(空欄)                                                                                                              |
+| Build command                       | `pnpm -F @recodock/web build`                                                                                                     |
+| Build output directory              | `apps/web/dist`                                                                                                                   |
+| 環境変数(Production / Preview 両方) | `NODE_VERSION`、`PNPM_VERSION`(ルート `package.json` の `packageManager` と同じ版)、`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY` |
+
+- SPA のフォールバック(深いパスへの直リンク)は、`404.html` を置かないことで Pages が `index.html` を返す既定動作に任せる
+- 環境変数を追加・変更しただけでは再ビルドされない。Deployments から Retry deployment するか `main` を更新する
+- `packageManager` の pnpm 版を上げたら、Cloudflare 側の `PNPM_VERSION` も合わせる
+
 ## アーキテクチャ上の重要ルール
 
 - UI から supabase-js を直接呼ばない。必ず `packages/shared` のデータアクセス層を経由する
