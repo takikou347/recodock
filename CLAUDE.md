@@ -10,7 +10,7 @@ Recodock(レコドック): カレンダーをコアに、記録系機能をモ�
 ## 構成
 
 - pnpm workspace + Turborepo のモノレポ(NFR-E1)。Node 22 / pnpm。
-- `apps/web` … React SPA(Vite + React Router)。Vercel にデプロイ。
+- `apps/web` … React SPA(Vite + React Router)。Cloudflare Pages にデプロイ。
 - `apps/mobile` … iOS アプリ(React Native + Expo)。EAS Build + TestFlight。
 - `packages/shared` … 型・ドメインロジック・データアクセス層。Web / iOS で共有。
 - `supabase/` … マイグレーション・seed。スキーマは必ずマイグレーションファイルで管理する。
