@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
-// デザイン(Recodock Screens.dc.html)の <symbol> をそのまま移植したもの。
 // ストロークは 1.6px・currentColor に統一する(既存サービスに寄せたトーン調整済み)。
+// サービスマークと6モジュールは「器＋耳＋中身」のアイコンシステム(develop-docs
+// 02_design/01_screen_design.md 3.5)。操作系はデザイン(Recodock Screens.dc.html)の <symbol> の移植。
 const stroke = {
   fill: 'none',
   stroke: 'currentColor',
@@ -10,58 +11,70 @@ const stroke = {
   strokeLinejoin: 'round',
 } as const;
 
+/** 器(角丸プレート)＋耳。サービスマークと全モジュールアイコンが共有する外形 */
+const frame = (
+  <g {...stroke}>
+    <rect x="3.5" y="7" width="17" height="14.5" rx="3.8" />
+    <path d="M3.9 8.4C2.6 5 3.5 2.3 5.6 2.3c1.9 0 3.2 2.3 3.4 5.4" />
+    <path d="M20.1 8.4c1.3-3.4.4-6.1-1.7-6.1-1.9 0-3.2 2.3-3.4 5.4" />
+  </g>
+);
+
 /** アイコン名 → SVG の中身。Icon.tsx からのみ参照する。 */
 export const ICON_PATHS = {
-  /* サービスマーク(ドック＋レコード) */
+  /* サービスマーク(器＋耳＋犬の顔)。カラー版は assets/brand/recodock-mark.svg */
   logo: (
-    <g {...stroke}>
-      <path d="M7.5 5.5h9A2 2 0 0 1 18.5 7.5V9" />
-      <rect x="3.5" y="9" width="15" height="10" rx="3" />
-      <circle cx="8.5" cy="14" r="1.5" />
-      <path d="M12 14h3.5" />
-    </g>
+    <>
+      {frame}
+      <circle cx="8.4" cy="12.2" r="1.5" fill="currentColor" />
+      <circle cx="15.6" cy="12.2" r="1.5" fill="currentColor" />
+      <rect x="8.9" y="14.3" width="6.2" height="4.4" rx="2.2" {...stroke} />
+      <circle cx="12" cy="15.8" r="1.05" fill="currentColor" />
+    </>
   ),
-  /* モジュール */
+  /* モジュール(器＋耳＋中身)。中身は x 6–18 / y 9–19 に収め、要素は3つまで */
   calendar: (
-    <g {...stroke}>
-      <rect x="3.5" y="5" width="17" height="15.5" rx="3.5" />
-      <path d="M8 3v3M16 3v3M3.5 10h17" />
-      <circle cx="8.5" cy="14" r="1.15" />
-      <circle cx="12" cy="14" r="1.15" />
-      <circle cx="15.5" cy="17.4" r="1.15" />
-    </g>
+    <>
+      {frame}
+      <path d="M3.5 11.2h17" {...stroke} />
+      <circle cx="8.4" cy="14.8" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="14.8" r="1.5" fill="currentColor" />
+      <circle cx="15.6" cy="18" r="1.5" fill="currentColor" />
+    </>
   ),
   money: (
-    <g {...stroke}>
-      <circle cx="12" cy="12" r="8.6" />
-      <path d="M8.6 7.8L12 12.4l3.4-4.6M9.2 12.8h5.6M9.2 15.4h5.6M12 12.4V17" />
-    </g>
+    <>
+      {frame}
+      <path d="M9.3 10l2.7 3.4 2.7-3.4M9.7 14.4h4.6M9.7 16.5h4.6M12 13.4v4.8" {...stroke} />
+    </>
   ),
   diary: (
-    <g {...stroke}>
-      <path d="M6.5 3h11A1.5 1.5 0 0 1 19 4.5v15A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3z" />
-      <path d="M9 3v7l2.1-1.5L13.2 10V3" />
-      <path d="M8.6 14.5h6.8M8.6 17.4h4.4" />
-    </g>
+    <>
+      {frame}
+      <path d="M9.6 7v4.8l2.4-1.7 2.4 1.7V7M8.2 16.6h7.6" {...stroke} />
+    </>
   ),
   items: (
-    <g {...stroke}>
-      <path d="M12 3l8.5 4.2v9.6L12 21l-8.5-4.2V7.2z" />
-      <path d="M3.5 7.2L12 11.4l8.5-4.2M12 11.4V21" />
-    </g>
+    <>
+      {frame}
+      <path
+        d="M12 9.6l4.4 2.2v4.4L12 18.4l-4.4-2.2v-4.4zM7.6 11.8l4.4 2.2 4.4-2.2M12 14v4.4"
+        {...stroke}
+      />
+    </>
   ),
   notes: (
-    <g {...stroke}>
-      <path d="M6.5 3h6.6L19 8.9v11.6A1.5 1.5 0 0 1 17.5 22h-11A1.5 1.5 0 0 1 5 20.5v-16A1.5 1.5 0 0 1 6.5 3z" />
-      <path d="M13 3v6h6" />
-      <path d="M8.5 13.5h7M8.5 16.8h4.6" />
-    </g>
+    <>
+      {frame}
+      <path d="M8 11.6h8M8 14.6h8M8 17.6h4.8" {...stroke} />
+    </>
   ),
   map: (
-    <g {...stroke}>
-      <path d="M12 21s6.8-6.2 6.8-11A6.8 6.8 0 1 0 5.2 10c0 4.8 6.8 11 6.8 11z" />
-      <circle cx="12" cy="10" r="2.6" />
-    </g>
+    <>
+      {frame}
+      <path d="M12 18.6s3.2-3.1 3.2-5.5a3.2 3.2 0 1 0-6.4 0c0 2.4 3.2 5.5 3.2 5.5z" {...stroke} />
+      <circle cx="12" cy="13.1" r="1.3" fill="currentColor" />
+    </>
   ),
   /* 操作 */
   search: (
