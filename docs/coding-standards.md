@@ -81,7 +81,11 @@ apps/web/src/
 ## 9. Git
 
 - コミットは Conventional Commits(`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`)。1コミット=1つの意図。
-- main へは CI(lint / format / typecheck / test)成功が前提(強制: ci.yml)。
+- ブランチ運用(ADR-0007): `main` = 本番(Cloudflare Pages Production / prod Supabase)、`develop` = 統合(Preview / dev Supabase)。
+  feature ブランチ → PR → `develop`(CI + Preview で確認)→ PR → `main`(本番反映)。`main` / `develop` はどちらも
+  直接 push 不可で PR 経由のみ(ブランチ保護 + `ci` 必須)。recodock は squash マージ。
+- CI(lint / format / typecheck / test)の成功が `main` / `develop` への前提(強制: ci.yml + ブランチ保護)。
+- Node は 22 に固定(`.node-version` / ci.yml の `node-version` / Cloudflare の `NODE_VERSION`)。`engines.node` は下限 `>=22`。
 - スキーマ変更はマイグレーション追加 → `pnpm gen:types` → 生成物を同一コミットに含める。
 
 ## 10. import 順序(強制: ESLint `simple-import-sort`)
