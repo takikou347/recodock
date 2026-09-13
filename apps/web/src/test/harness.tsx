@@ -14,7 +14,7 @@ import { SearchPage } from '../core/SearchPage';
 import { SettingsPage } from '../core/SettingsPage';
 import { SignUpPage } from '../core/SignUpPage';
 import { UserModulesProvider } from '../core/userModules';
-import { moduleRegistry, type RouteHandle } from '../modules/registry';
+import { moduleRegistry } from '../modules/registry';
 
 /** テスト中のリトライ・キャッシュを切って、1 回の呼び出しがそのまま画面に出るようにする。 */
 function createTestQueryClient(): QueryClient {
@@ -53,17 +53,14 @@ export function renderApp({ route = '/' }: RenderAppOptions = {}): RenderResult 
           {
             path: 'search',
             element: <SearchPage />,
-            handle: { shellMode: 'rail' } satisfies RouteHandle,
           },
           {
             path: 'modules',
             element: <ModuleManagerPage />,
-            handle: { shellMode: 'rail' } satisfies RouteHandle,
           },
           {
             path: 'settings',
             element: <SettingsPage />,
-            handle: { shellMode: 'rail' } satisfies RouteHandle,
           },
         ],
       },

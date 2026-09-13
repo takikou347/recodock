@@ -120,3 +120,32 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
+
+// ---- jsdom に無いブラウザ API。shadcn/ui(Sidebar の matchMedia、Radix のポインタ捕捉・スクロール)が参照する ----
+if (typeof window.matchMedia !== 'function') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string): MediaQueryList => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+}
+if (typeof globalThis.ResizeObserver !== 'function') {
+  class ResizeObserverStub {
+    observe = () => undefined;
+    unobserve = () => undefined;
+    disconnect = () => undefined;
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+}
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.setPointerCapture ??= () => undefined;
+Element.prototype.releasePointerCapture ??= () => undefined;
+Element.prototype.scrollIntoView ??= () => undefined;

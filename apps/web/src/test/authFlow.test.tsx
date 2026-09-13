@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -74,13 +74,16 @@ describe('認証(SC-01): ログインしないと記録に入れない', () => {
   });
 
   it('ログイン済みならサイドバーにユーザー名が出て、ログアウトできる', async () => {
-    const user = userEvent.setup();
     renderApp({ route: '/' });
 
-    const signOutButton = await screen.findByRole('button', { name: /瀧川皓太/ });
-    await user.click(signOutButton);
+    // 誤操作防止のため、ユーザーメニューを開いてからログアウトする。
+    // Radix のメニューが開いている間は RTL の待機系(findBy* / waitFor)が act の都合で 10 秒超かかるため、
+    // 開閉はキーボードイベントで同期的に起こし、項目も同期クエリで引く(メニューは同じ act 内で描画される)。
+    const trigger = await screen.findByRole('button', { name: /瀧川皓太/ });
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    fireEvent.click(screen.getByText('ログアウト'));
 
-    await waitFor(() => expect(authRepo.signOut).toHaveBeenCalledTimes(1));
+    expect(authRepo.signOut).toHaveBeenCalledTimes(1);
   });
 });
 

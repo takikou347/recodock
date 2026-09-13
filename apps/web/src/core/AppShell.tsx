@@ -1,51 +1,73 @@
-import type { CSSProperties, ReactNode } from 'react';
+import {
+  ChevronsUpDownIcon,
+  LayoutGridIcon,
+  LogOutIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PlusIcon,
+  SearchIcon,
+  SettingsIcon,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { NavLink, useLocation, useMatches, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import type { ModuleKey } from '@recodock/shared';
 
-import { Icon } from '../components/icons/Icon';
-import type { WebModule } from '../modules/registry';
-import type { RouteHandle, ShellMode } from '../modules/registry';
-import { findModule, moduleRegistry } from '../modules/registry';
 import { useAuth } from './auth';
 import { ModuleLauncher } from './ModuleLauncher';
 import { useModuleEntryCounts } from './useModuleEntryCounts';
 import { useUserModules } from './userModules';
 
-import styles from './AppShell.module.css';
-
-/** モジュール色をこのサブツリーへ流し込むためのインラインカスタムプロパティ。 */
-function toneStyle(moduleKey: ModuleKey): CSSProperties {
-  return {
-    '--tone-bg': `var(--color-${moduleKey}-bg)`,
-    '--tone-line': `var(--color-${moduleKey}-line)`,
-    '--tone-fg': `var(--color-${moduleKey}-fg)`,
-    '--tone-solid': `var(--color-${moduleKey}-solid)`,
-  } as CSSProperties;
-}
+import { BrandMark } from '@/components/icons/BrandMark';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import type { WebModule } from '@/modules/registry';
+import { findModule } from '@/modules/registry';
 
 export interface AppShellProps {
   children: ReactNode;
 }
 
 /**
- * 全 PC 画面で共通のシェル。ルートの handle.shellMode で
- * 幅広サイドバー(カレンダー・家計簿)とアイコンレール(左に自前のリストを持つ画面)を切り替える。
- * SP(< 768px)ではハンバーガー＋ドロワーに収納する。
+ * 全画面共通のシェル(01_screen_design.md 3.2)。
+ * サイドバーは 1 種類だけで、幅(通常 / アイコンのみ)は利用者が切り替える(⌘B・端のレール・フッターのボタン)。
+ * SP(< 768px)では shadcn/ui の Sidebar がシート(フォーカストラップ・ESC・aria-modal つき)に切り替える。
+ * ログアウト・検索・モジュール管理・設定は、幅や端末にかかわらず常に同じ場所から辿れる。
  */
 export function AppShell({ children }: AppShellProps) {
-  const matches = useMatches();
   const location = useLocation();
   const { addedKeys } = useUserModules();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
-
-  // もっとも深いルートが宣言した shellMode を採用する(既定は幅広サイドバー)
-  const shellMode: ShellMode = matches.reduce<ShellMode>((mode, match) => {
-    const handle = match.handle as RouteHandle | undefined;
-    return handle?.shellMode ?? mode;
-  }, 'sidebar');
 
   const addedModules = addedKeys
     .map((key) => findModule(key))
@@ -59,335 +81,231 @@ export function AppShell({ children }: AppShellProps) {
   }, undefined);
   const activeKey: ModuleKey = activeModule?.definition.key ?? 'calendar';
 
-  const openLauncher = () => {
-    setIsLauncherOpen(true);
-    setIsDrawerOpen(false);
-  };
-
   return (
-    <div className={styles.root}>
-      {shellMode === 'sidebar' ? (
-        <Sidebar modules={addedModules} activeKey={activeKey} onOpenLauncher={openLauncher} />
-      ) : (
-        <Rail modules={addedModules} activeKey={activeKey} onOpenLauncher={openLauncher} />
-      )}
-
-      <div className={styles.main}>
-        <header className={styles.mobileHeader}>
-          <button
-            type="button"
-            className={styles.hamburger}
-            aria-label="メニューを開く"
-            onClick={() => setIsDrawerOpen(true)}
-          >
-            <Icon name="menu" size={22} />
-          </button>
-          <span className={styles.mobileTitle}>
-            {findModule(activeKey)?.definition.displayName ?? 'recodock'}
-          </span>
-        </header>
-        {children}
-      </div>
-
-      {isDrawerOpen ? (
-        <MobileDrawer
+    <TooltipProvider>
+      <SidebarProvider>
+        <AppSidebar
           modules={addedModules}
           activeKey={activeKey}
-          onClose={() => setIsDrawerOpen(false)}
-          onOpenLauncher={openLauncher}
+          onOpenLauncher={() => setIsLauncherOpen(true)}
         />
-      ) : null}
-
-      <ModuleLauncher isOpen={isLauncherOpen} onClose={() => setIsLauncherOpen(false)} />
-    </div>
+        <SidebarInset>
+          <MobileHeader title={findModule(activeKey)?.definition.displayName ?? 'recodock'} />
+          {children}
+        </SidebarInset>
+        <ModuleLauncher isOpen={isLauncherOpen} onClose={() => setIsLauncherOpen(false)} />
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
 
-interface NavProps {
+/** SP 専用のヘッダー。PC では描画しない(DOM にも残さない)。 */
+function MobileHeader({ title }: { title: string }) {
+  const { isMobile } = useSidebar();
+  if (!isMobile) return null;
+  return (
+    <header className="bg-background sticky top-0 z-10 flex h-12 items-center gap-2 border-b px-3">
+      <SidebarTrigger aria-label="メニューを開く" />
+      <span className="text-sm font-medium">{title}</span>
+    </header>
+  );
+}
+
+interface AppSidebarProps {
   modules: readonly WebModule[];
   activeKey: ModuleKey;
   onOpenLauncher: () => void;
 }
 
-/** 幅広サイドバー(SC-04 / MON-20)。検索の横に Google 風のランチャーを置く。 */
-function Sidebar({ modules, activeKey, onOpenLauncher }: NavProps) {
-  const navigate = useNavigate();
+function AppSidebar({ modules, activeKey, onOpenLauncher }: AppSidebarProps) {
   const entryCounts = useModuleEntryCounts();
-  const activeModule = modules.find((module) => module.definition.key === activeKey);
-  const activeSecondaryNav = activeModule?.secondaryNav
-    ? {
-        label: `${activeModule.definition.brandName.replace('Reco ', '').toUpperCase()} 内ナビ`,
-        items: activeModule.secondaryNav,
-        moduleKey: activeModule.definition.key,
-      }
-    : undefined;
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // SP のシートは遷移しても自動では閉じないため、リンクを押したら閉じる
+  const closeOnNavigate = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   return (
-    <nav
-      className={styles.sidebar}
-      aria-label="モジュール"
-      style={activeSecondaryNav ? toneStyle(activeSecondaryNav.moduleKey) : undefined}
-    >
-      <div className={styles.brand}>
-        <span className={styles.brandMark}>
-          <Icon name="logo" size={22} />
-        </span>
-        <span className={styles.brandName}>recodock</span>
-      </div>
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild tooltip="recodock">
+              <Link to="/" onClick={closeOnNavigate}>
+                <BrandMark size={16} className="size-8 rounded-md" />
+                <span className="font-heading text-base font-semibold">recodock</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      <div className={styles.searchRow}>
-        <button type="button" className={styles.searchBox} onClick={() => navigate('/search')}>
-          <Icon name="search" size={16} />
-          すべての記録を検索
-        </button>
-        <button
-          type="button"
-          className={styles.launcher}
-          aria-label="モジュールランチャーを開く"
-          onClick={onOpenLauncher}
-        >
-          <Icon name="grid" size={18} />
-        </button>
-      </div>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="すべての記録を検索">
+                  <NavLink to="/search" onClick={closeOnNavigate}>
+                    <SearchIcon />
+                    <span>すべての記録を検索</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-      <p className={styles.sectionLabel}>マイモジュール</p>
-      <div className={styles.navList}>
-        {modules.map((module) => (
-          <ModuleNavLink
-            key={module.definition.key}
-            module={module}
-            activeKey={activeKey}
-            count={entryCounts.get(module.definition.key)}
-          />
-        ))}
-        <button type="button" className={styles.addModule} onClick={onOpenLauncher}>
-          <Icon name="plus" size={18} />
-          モジュールを追加
-        </button>
-      </div>
+        <nav aria-label="モジュール">
+          <SidebarGroup>
+            <SidebarGroupLabel>マイモジュール</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {modules.map((module) => {
+                  const ModuleIcon = module.icon;
+                  const isActive = module.definition.key === activeKey;
+                  const count = entryCounts.get(module.definition.key);
+                  const secondaryNav = isActive ? module.secondaryNav : undefined;
+                  return (
+                    <SidebarMenuItem key={module.definition.key}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={module.definition.displayName}
+                      >
+                        <NavLink to={module.basePath} onClick={closeOnNavigate}>
+                          <ModuleIcon />
+                          <span>{module.definition.displayName}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                      {count !== undefined ? <SidebarMenuBadge>{count}</SidebarMenuBadge> : null}
+                      {secondaryNav ? (
+                        <SidebarMenuSub>
+                          {secondaryNav.map((item) => (
+                            <SidebarMenuSubItem key={item.path}>
+                              <NavLink to={item.path} end onClick={closeOnNavigate}>
+                                {({ isActive: isSubActive }) => (
+                                  <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                    <span>{item.label}</span>
+                                  </SidebarMenuSubButton>
+                                )}
+                              </NavLink>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      ) : null}
+                    </SidebarMenuItem>
+                  );
+                })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="モジュールを追加"
+                    className="text-muted-foreground"
+                    onClick={onOpenLauncher}
+                  >
+                    <PlusIcon />
+                    <span>モジュールを追加</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </nav>
+      </SidebarContent>
 
-      {activeSecondaryNav ? (
-        <div className={styles.secondaryNav}>
-          <p className={styles.secondaryNavLabel}>{activeSecondaryNav.label}</p>
-          <div className={styles.secondaryNavList}>
-            {activeSecondaryNav.items.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end
-                className={({ isActive }) =>
-                  [styles.secondaryNavItem, isActive ? styles.secondaryNavItemActive : '']
-                    .filter(Boolean)
-                    .join(' ')
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <div className={styles.sidebarFooter}>
-        <NavLink to="/modules" className={styles.footerItem}>
-          <Icon name="grid" size={19} />
-          モジュール管理
-        </NavLink>
-        <NavLink to="/settings" className={styles.footerItem}>
-          <Icon name="settings" size={19} />
-          設定
-        </NavLink>
-        <UserRow />
-      </div>
-    </nav>
-  );
-}
-
-interface ModuleNavLinkProps {
-  module: WebModule;
-  activeKey: ModuleKey;
-  /** サイドバー右端に出す記録件数 */
-  count?: number;
-}
-
-/** サイドバー最下段のユーザー行。押すとログアウトする。 */
-function UserRow() {
-  const { user, signOut } = useAuth();
-  const label = user?.displayName ?? user?.email ?? 'ゲスト';
-  return (
-    <button type="button" className={styles.user} onClick={() => void signOut()} title="ログアウト">
-      <span className={styles.avatar} />
-      <span className={styles.userName}>{label}</span>
-      <span className={styles.signOut}>ログアウト</span>
-    </button>
-  );
-}
-
-function ModuleNavLink({ module, activeKey, count }: ModuleNavLinkProps) {
-  const isActive = module.definition.key === activeKey;
-  return (
-    <NavLink
-      to={module.basePath}
-      style={toneStyle(module.definition.key)}
-      className={[styles.navItem, isActive ? styles.navItemActive : ''].filter(Boolean).join(' ')}
-    >
-      <span className={styles.navIcon}>
-        <Icon name={module.icon} size={20} />
-      </span>
-      {module.definition.displayName}
-      {count !== undefined ? <span className={styles.navCount}>{count}</span> : null}
-    </NavLink>
-  );
-}
-
-/** アイコンレール(DIA-40 / SC-07 / SC-05 / ITM-50 / MEM-60)。左に自前のリストを持つ画面で使う。 */
-function Rail({ modules, activeKey, onOpenLauncher }: NavProps) {
-  return (
-    <nav className={styles.rail} aria-label="モジュール">
-      <NavLink to="/" className={styles.railBrand} aria-label="ホーム">
-        <Icon name="logo" size={23} />
-      </NavLink>
-
-      {modules.map((module) => {
-        const isActive = module.definition.key === activeKey;
-        return (
-          <NavLink
-            key={module.definition.key}
-            to={module.basePath}
-            style={toneStyle(module.definition.key)}
-            aria-label={module.definition.displayName}
-            className={[styles.railItem, isActive ? styles.railItemActive : '']
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <Icon name={module.icon} size={22} />
-          </NavLink>
-        );
-      })}
-
-      <button
-        type="button"
-        className={styles.railAdd}
-        aria-label="モジュールを追加"
-        onClick={onOpenLauncher}
-      >
-        <Icon name="plus" size={20} />
-      </button>
-
-      <div className={styles.railFooter}>
-        <NavLink
-          to="/search"
-          aria-label="横断検索"
-          className={({ isActive }) =>
-            [styles.railFooterItem, isActive ? styles.railFooterItemActive : '']
-              .filter(Boolean)
-              .join(' ')
-          }
-        >
-          <Icon name="search" size={20} />
-        </NavLink>
-        <NavLink
-          to="/modules"
-          aria-label="モジュール管理"
-          className={({ isActive }) =>
-            [styles.railFooterItem, isActive ? styles.railFooterItemActive : '']
-              .filter(Boolean)
-              .join(' ')
-          }
-        >
-          <Icon name="grid" size={20} />
-        </NavLink>
-        <NavLink
-          to="/settings"
-          aria-label="設定"
-          className={({ isActive }) =>
-            [styles.railFooterItem, isActive ? styles.railFooterItemActive : '']
-              .filter(Boolean)
-              .join(' ')
-          }
-        >
-          <Icon name="settings" size={20} />
-        </NavLink>
-      </div>
-    </nav>
-  );
-}
-
-interface MobileDrawerProps extends NavProps {
-  onClose: () => void;
-}
-
-/** SP のモジュール切替ドロワー。追加できるモジュールも同じ場所から辿れる。 */
-function MobileDrawer({ modules, activeKey, onClose, onOpenLauncher }: MobileDrawerProps) {
-  const navigate = useNavigate();
-  const addedKeys = new Set(modules.map((module) => module.definition.key));
-  const addableModules = moduleRegistry.filter((module) => !addedKeys.has(module.definition.key));
-
-  return (
-    <>
-      <div className={styles.drawerScrim} onClick={onClose} role="presentation" />
-      <nav className={styles.drawer} aria-label="モジュール">
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Icon name="logo" size={22} />
-          </span>
-          <span className={styles.brandName}>recodock</span>
-        </div>
-
-        <div className={styles.searchRow}>
-          <button
-            type="button"
-            className={styles.searchBox}
-            onClick={() => {
-              onClose();
-              navigate('/search');
-            }}
-          >
-            <Icon name="search" size={17} />
-            検索
-          </button>
-        </div>
-
-        <p className={styles.sectionLabel}>マイモジュール</p>
-        <div className={styles.navList} onClick={onClose} role="presentation">
-          {modules.map((module) => (
-            <ModuleNavLink key={module.definition.key} module={module} activeKey={activeKey} />
-          ))}
-        </div>
-
-        {addableModules.length > 0 ? (
-          <div className={styles.drawerAddable}>
-            <p className={styles.drawerAddableLabel}>追加できるモジュール</p>
-            <div className={styles.drawerAddableRow}>
-              {addableModules.map((module) => (
-                <button
-                  key={module.definition.key}
-                  type="button"
-                  className={styles.drawerAddableItem}
-                  style={toneStyle(module.definition.key)}
-                  onClick={onOpenLauncher}
-                >
-                  <span className={styles.drawerAddableIcon}>
-                    <Icon name={module.icon} size={24} />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <NavLink to="/modules" onClick={closeOnNavigate}>
+              {({ isActive }) => (
+                <SidebarMenuButton asChild isActive={isActive} tooltip="モジュール管理">
+                  <span>
+                    <LayoutGridIcon />
+                    <span>モジュール管理</span>
                   </span>
-                  <span className={styles.drawerAddableName}>{module.definition.displayName}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+                </SidebarMenuButton>
+              )}
+            </NavLink>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <NavLink to="/settings" onClick={closeOnNavigate}>
+              {({ isActive }) => (
+                <SidebarMenuButton asChild isActive={isActive} tooltip="設定">
+                  <span>
+                    <SettingsIcon />
+                    <span>設定</span>
+                  </span>
+                </SidebarMenuButton>
+              )}
+            </NavLink>
+          </SidebarMenuItem>
+          <CollapseToggle />
+          <UserMenu />
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
 
-        <div className={styles.sidebarFooter} onClick={onClose} role="presentation">
-          <NavLink to="/modules" className={styles.footerItem}>
-            <Icon name="grid" size={20} />
-            モジュール管理
-          </NavLink>
-          <NavLink to="/settings" className={styles.footerItem}>
-            <Icon name="settings" size={20} />
-            設定
-          </NavLink>
-        </div>
-      </nav>
-    </>
+/** サイドバー幅の切り替え。SP はシートなので出さない。 */
+function CollapseToggle() {
+  const { isMobile, state, toggleSidebar } = useSidebar();
+  if (isMobile) return null;
+  const isCollapsed = state === 'collapsed';
+  const label = isCollapsed ? 'サイドバーを広げる' : 'サイドバーを畳む';
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        tooltip={label}
+        className="text-muted-foreground"
+        aria-label={label}
+        onClick={toggleSidebar}
+      >
+        {isCollapsed ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
+        <span>{label}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+/** 最下段のユーザーメニュー。ログアウトはここからだけ行う(誤操作防止のため 1 段挟む)。 */
+function UserMenu() {
+  const { user, signOut } = useAuth();
+  const { isMobile } = useSidebar();
+  const label = user?.displayName ?? user?.email ?? 'ゲスト';
+  const initial = label.trim().charAt(0).toUpperCase() || '?';
+
+  return (
+    <SidebarMenuItem>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          {/* tooltip を付けると Tooltip でラップされて返り、Trigger のイベントがボタンに届かないので付けない */}
+          <SidebarMenuButton size="lg" aria-label={label}>
+            <Avatar className="size-8 rounded-md">
+              <AvatarFallback className="rounded-md text-xs">{initial}</AvatarFallback>
+            </Avatar>
+            <span className="truncate text-sm font-medium">{label}</span>
+            <ChevronsUpDownIcon className="ml-auto size-4 opacity-60" />
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side={isMobile ? 'top' : 'right'}
+          align="end"
+          className="w-56"
+          sideOffset={8}
+        >
+          <DropdownMenuLabel className="text-muted-foreground truncate text-xs font-normal">
+            {user?.email ?? label}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => void signOut()}>
+            <LogOutIcon />
+            ログアウト
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </SidebarMenuItem>
   );
 }
