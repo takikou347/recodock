@@ -149,3 +149,14 @@ Element.prototype.hasPointerCapture ??= () => false;
 Element.prototype.setPointerCapture ??= () => undefined;
 Element.prototype.releasePointerCapture ??= () => undefined;
 Element.prototype.scrollIntoView ??= () => undefined;
+
+// ---- nwsapi(jsdom のセレクタエンジン)2.2.27 の再帰バグ回避 ----
+// `:modal` / `:fullscreen` の判定が matches() を経由して自分自身を呼び続け、1 回の照合に数秒かかる。
+// Radix の Popper(floating-ui)は位置計算のたびに `matches(':popover-open')` と `matches(':modal')` を呼ぶため、
+// メニューやポップオーバーを開いたテストの直後にタイマーが 7 秒以上止まり、CI ではタイムアウトしていた。
+// jsdom にトップレイヤーは無いので、これらの擬似クラスは常に不一致として返す。
+const nativeMatches = Element.prototype.matches;
+Element.prototype.matches = function matches(this: Element, selectors: string): boolean {
+  if (/:(modal|popover-open|fullscreen)\b/.test(selectors)) return false;
+  return nativeMatches.call(this, selectors);
+};

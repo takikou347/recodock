@@ -77,8 +77,8 @@ describe('認証(SC-01): ログインしないと記録に入れない', () => {
     renderApp({ route: '/' });
 
     // 誤操作防止のため、ユーザーメニューを開いてからログアウトする。
-    // Radix のメニューが開いている間は RTL の待機系(findBy* / waitFor)が act の都合で 10 秒超かかるため、
-    // 開閉はキーボードイベントで同期的に起こし、項目も同期クエリで引く(メニューは同じ act 内で描画される)。
+    // jsdom には PointerEvent が無く userEvent の click ではメニューが開かないので、
+    // キーボードイベントで同期的に開き、項目も同期クエリで引く(メニューは同じ act 内で描画される)。
     const trigger = await screen.findByRole('button', { name: /瀧川皓太/ });
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     fireEvent.click(screen.getByText('ログアウト'));
