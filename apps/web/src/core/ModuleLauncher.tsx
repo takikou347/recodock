@@ -33,7 +33,12 @@ export function ModuleLauncher({ isOpen, onClose }: ModuleLauncherProps) {
   const { addedKeys, addModule } = useUserModules();
   const { showToast } = useToast();
 
-  const onSelect = (moduleKey: ModuleKey, displayName: string, isAdded: boolean, basePath: string) => {
+  const onSelect = (
+    moduleKey: ModuleKey,
+    displayName: string,
+    isAdded: boolean,
+    basePath: string,
+  ) => {
     if (isAdded) {
       onClose();
       navigate(basePath);
@@ -82,7 +87,9 @@ export function ModuleLauncher({ isOpen, onClose }: ModuleLauncherProps) {
         </ul>
 
         <DialogFooter className="items-center sm:justify-between">
-          <p className="text-muted-foreground text-xs">追加した順にサイドバー／iOS タブへ並びます</p>
+          <p className="text-muted-foreground text-xs">
+            追加した順にサイドバー／iOS タブへ並びます
+          </p>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/modules" onClick={onClose}>
               モジュール管理を開く
