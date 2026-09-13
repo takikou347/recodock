@@ -21,7 +21,7 @@
   align-items: center;
   gap: 10px;
   padding: var(--space-3) var(--space-6);
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface-raised);
   flex-wrap: wrap;
 }
@@ -100,7 +100,7 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface);
   color: var(--color-ink-muted);
   display: flex;
@@ -283,7 +283,7 @@
   align-items: center;
   gap: 2px;
   background: var(--color-ink);
-  border-radius: var(--radius-md);
+  border-radius: var(--rd-radius-md);
   padding: 5px 6px;
   box-shadow: var(--shadow-toast);
   z-index: var(--z-dropdown);
@@ -350,7 +350,7 @@
   align-items: center;
   gap: 2px;
   background: var(--color-ink);
-  border-radius: var(--radius-md);
+  border-radius: var(--rd-radius-md);
   padding: 5px var(--space-2);
   box-shadow: var(--shadow-toast);
   white-space: nowrap;
@@ -383,7 +383,7 @@
   /* button は内容幅に縮むため、既定(幅いっぱい)を明示する */
   width: 100%;
   position: relative;
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   border: var(--border-width) solid var(--color-border-dashed);
   background: var(--color-diary-bg);
   height: 230px;
@@ -472,7 +472,7 @@
   width: 290px;
   background: var(--color-surface-raised);
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   box-shadow: var(--shadow-menu);
   padding: 10px;
   z-index: var(--z-dropdown);
@@ -505,9 +505,9 @@
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--rd-radius-sm);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   color: var(--color-ink);
   display: flex;
   align-items: center;
@@ -536,7 +536,7 @@
 .aside {
   width: 300px;
   flex-shrink: 0;
-  border-left: var(--border-width) solid var(--color-border);
+  border-left: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface-raised);
   padding: 22px;
   display: flex;
@@ -552,9 +552,9 @@
 
 .asideCard {
   padding: 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
 }
 
 .asideLabel {
@@ -600,7 +600,7 @@
 
 .asideLink {
   padding: 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   background: var(--tone-bg);
   border: var(--border-width) solid var(--tone-line);
   color: var(--tone-fg);
@@ -616,7 +616,7 @@
 .asideNote {
   margin-top: auto;
   padding: 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   border: var(--border-width) dashed var(--color-border-dashed);
   font-size: var(--font-size-sm);
   color: var(--color-ink-muted);

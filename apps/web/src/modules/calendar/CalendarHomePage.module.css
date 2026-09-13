@@ -58,7 +58,7 @@
 .cell {
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border-row);
-  border-radius: var(--radius-md);
+  border-radius: var(--rd-radius-md);
   padding: 7px var(--space-2);
   display: flex;
   flex-direction: column;
@@ -100,7 +100,7 @@
 }
 
 .cellToday .dayNumber {
-  background: var(--color-accent);
+  background: var(--rd-color-accent);
   color: var(--color-surface);
 }
 
@@ -144,7 +144,7 @@
 .detailPane {
   width: var(--detail-width);
   flex-shrink: 0;
-  border-left: var(--border-width) solid var(--color-border);
+  border-left: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface-raised);
   padding: var(--space-6) 22px;
   display: flex;
@@ -210,7 +210,7 @@
 
 .note {
   padding: 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   border: var(--border-width) dashed var(--color-border-dashed);
   background: var(--color-bg);
   font-size: var(--font-size-sm);
@@ -262,7 +262,7 @@
   .cell {
     align-items: center;
     padding: var(--space-1) 2px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--rd-radius-sm);
     gap: 3px;
   }
 
@@ -295,7 +295,7 @@
   .detailPane {
     width: auto;
     border-left: none;
-    border-top: var(--border-width) solid var(--color-border);
+    border-top: var(--border-width) solid var(--rd-color-border);
     padding: 14px var(--space-4) 80px;
   }
 
@@ -342,8 +342,8 @@
   align-items: baseline;
   gap: var(--space-3);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: var(--border-width) solid var(--rd-color-border);
+  border-radius: var(--rd-radius-lg);
   padding: 13px var(--space-4);
   box-shadow: var(--shadow-card-sm);
   text-align: left;

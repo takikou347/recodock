@@ -72,7 +72,7 @@
 .addableRow {
   background: var(--color-bg);
   border: var(--border-width) dashed var(--color-border-dashed);
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   padding: var(--space-3) 14px;
   display: flex;
   align-items: center;

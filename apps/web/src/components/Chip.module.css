@@ -15,7 +15,7 @@
 
 .neutral {
   background: var(--color-surface);
-  border-color: var(--color-border);
+  border-color: var(--rd-color-border);
   color: var(--color-ink-muted);
   font-weight: var(--font-weight-body);
 }

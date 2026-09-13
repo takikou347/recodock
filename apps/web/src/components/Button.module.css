@@ -108,7 +108,7 @@
 .ink:disabled {
   background: var(--color-surface-strong);
   color: var(--color-ink-subtle);
-  border-color: var(--color-border);
+  border-color: var(--rd-color-border);
 }
 
 /* ─── デンジャー(取り消せない操作) ─── */
@@ -136,7 +136,7 @@
 .danger:disabled {
   background: var(--color-surface-strong);
   color: var(--color-ink-subtle);
-  border-color: var(--color-border);
+  border-color: var(--rd-color-border);
   box-shadow: none;
   transform: none;
 }
@@ -144,7 +144,7 @@
 .secondary:disabled {
   background: var(--color-surface);
   color: var(--color-ink-faint);
-  border-color: var(--color-border);
+  border-color: var(--rd-color-border);
 }
 
 .text:disabled {

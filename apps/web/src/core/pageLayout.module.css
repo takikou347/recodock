@@ -59,7 +59,7 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface);
   color: var(--color-ink-muted);
   display: flex;

@@ -17,7 +17,7 @@
   padding: var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--color-surface-strong);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   margin-bottom: 2px;
 }
 
@@ -71,8 +71,8 @@
 .iconButton {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-sm);
-  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--rd-radius-sm);
+  border: var(--border-width) solid var(--rd-color-border);
   color: var(--color-ink-muted);
   display: flex;
   align-items: center;

@@ -24,7 +24,7 @@
 }
 
 .tile {
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   border-radius: 18px;
   padding: var(--space-4) var(--space-3);
   background: var(--color-surface);
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 10px;
   padding-top: var(--space-1);
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--rd-color-border);
   font-size: var(--font-size-sm);
   color: var(--color-ink-muted);
 }

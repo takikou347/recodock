@@ -2,7 +2,7 @@
 
 .card {
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
   border-radius: 18px;
   box-shadow: var(--shadow-card);
   padding: var(--space-5);
@@ -10,7 +10,7 @@
 
 /* 一覧の行として使う小さめのカード */
 .row {
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   box-shadow: var(--shadow-card-sm);
   padding: 13px var(--space-4);
 }
@@ -37,6 +37,6 @@
 }
 
 .clickable:hover {
-  box-shadow: 5px 5px 0 var(--color-border);
+  box-shadow: 5px 5px 0 var(--rd-color-border);
   transform: translate(-1px, -1px);
 }

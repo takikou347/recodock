@@ -23,7 +23,7 @@
 
 .empty {
   padding: var(--space-3) 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--rd-radius-md);
   border: var(--border-width) dashed var(--color-border-dashed);
   background: var(--color-bg);
   font-size: var(--font-size-md);

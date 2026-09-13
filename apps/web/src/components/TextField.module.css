@@ -28,8 +28,8 @@
 .input {
   width: 100%;
   padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--rd-radius-md);
+  border: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface);
   font-size: var(--font-size-base);
   transition:
