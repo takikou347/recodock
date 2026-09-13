@@ -27,14 +27,14 @@
   --color-ink-inverse: #fbf7f0; /* 濃色面上の文字 */
   --color-ink-inverse-muted: #bdb4aa; /* 濃色面上の補助文字 */
 
-  --color-border: #e7dfd3; /* 既定の枠線 */
+  --rd-color-border: #e7dfd3; /* 既定の枠線 */
   --color-border-strong: #d8cebe; /* 画面フレーム */
   --color-border-dashed: #c9beae; /* 破線(入力欄・空状態) */
   --color-border-faint: #f0e9dc; /* 区切り線 */
   --color-border-row: #ede5d8; /* カレンダーセル */
   --color-grabber: #e0d7c9; /* ボトムシートのグラバー */
 
-  --color-accent: #ee8a6e; /* FAB・今日 */
+  --rd-color-accent: #ee8a6e; /* FAB・今日 */
   --color-accent-ink: #5e2a19;
   --color-avatar: #ead9c6; /* 既定アバター面 */
 
@@ -139,10 +139,10 @@
   --space-8: 32px;
 
   /* ─────────── 角丸 ─────────── */
-  --radius-sm: 9px; /* 小(バッジ・アイコンボタン) */
-  --radius-md: 12px; /* 行・入力欄 */
-  --radius-lg: 16px; /* カード */
-  --radius-xl: 22px; /* 面(モーダル・画面) */
+  --rd-radius-sm: 9px; /* 小(バッジ・アイコンボタン) */
+  --rd-radius-md: 12px; /* 行・入力欄 */
+  --rd-radius-lg: 16px; /* カード */
+  --rd-radius-xl: 22px; /* 面(モーダル・画面) */
   --radius-pill: 999px; /* ボタン・チップ */
 
   /* ─────────── 影(エレベーション) ─────────── */

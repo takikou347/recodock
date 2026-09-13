@@ -1,19 +1,19 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { AppError, authRepo } from '@recodock/shared';
 
-import { Button } from '../components/Button';
-import { Icon } from '../components/icons/Icon';
-import { TextField } from '../components/TextField';
-import { supabase } from '../lib/supabase';
+import { AuthLayout } from './AuthLayout';
 
-import styles from './LoginPage.module.css';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { supabase } from '@/lib/supabase';
 
 /** SC-03 パスワード再設定。メールでのリセットフロー。 */
 export function PasswordResetPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [errorText, setErrorText] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,46 +38,46 @@ export function PasswordResetPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <span className={[styles.blob, styles.blobTopLeft].join(' ')} />
-      <span className={[styles.blob, styles.blobBottomRight].join(' ')} />
-
-      <form className={styles.card} onSubmit={onSubmit}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Icon name="logo" size={32} />
-          </span>
-          <h1 className={styles.brandName}>パスワード再設定</h1>
-          <p className={styles.tagline}>登録済みのメールアドレスに再設定リンクを送ります</p>
-        </div>
-
-        {isSent ? (
-          <p className={styles.notice} role="status">
+    <AuthLayout
+      title="パスワード再設定"
+      description="登録済みのメールアドレスに再設定リンクを送ります"
+      footer={
+        <Link to="/login" className="text-foreground underline underline-offset-4">
+          ログインへ戻る
+        </Link>
+      }
+    >
+      {isSent ? (
+        <Alert role="status">
+          <AlertDescription>
             再設定メールを送りました。メール内のリンクから新しいパスワードを設定してください。
-          </p>
-        ) : (
-          <>
-            <TextField
-              label="メールアドレス"
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+          {errorText ? (
+            <Alert variant="destructive">
+              <AlertDescription>{errorText}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="grid gap-2">
+            <Label htmlFor="reset-email">メールアドレス</Label>
+            <Input
+              id="reset-email"
               type="email"
               autoComplete="email"
               placeholder="kota@example.com"
               value={email}
-              errorText={errorText}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <Button type="submit" variant="primary" size="lg" isBlock disabled={isSubmitting}>
-              {isSubmitting ? '送信中…' : '再設定メールを送る'}
-            </Button>
-          </>
-        )}
+          </div>
 
-        <p className={styles.signup}>
-          <button type="button" className={styles.signupLink} onClick={() => navigate('/login')}>
-            ログインへ戻る
-          </button>
-        </p>
-      </form>
-    </div>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? '送信中…' : '再設定メールを送る'}
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
   );
 }

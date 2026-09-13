@@ -17,7 +17,7 @@ import { UserModulesProvider } from './core/userModules';
 import type { RouteHandle } from './modules/registry';
 import { moduleRegistry } from './modules/registry';
 
-import './styles/global.css';
+import './index.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

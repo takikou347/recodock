@@ -18,7 +18,7 @@
   flex-direction: column;
   gap: 10px;
   background: var(--color-surface-raised);
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--rd-color-border);
 }
 
 .searchBox {
@@ -26,7 +26,7 @@
   align-items: center;
   gap: 10px;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-ink);
   box-shadow: var(--shadow-action);
@@ -140,7 +140,7 @@
   max-width: 520px;
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-xl);
+  border-radius: var(--rd-radius-xl);
   padding: var(--space-4);
   box-shadow: 4px 4px 0 var(--color-ink);
   display: flex;

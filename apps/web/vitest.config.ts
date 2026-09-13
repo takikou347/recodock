@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config';
 // 画面テストは jsdom 上で動かす。モックはリポジトリ関数の境界でのみ行う(コーディング規約 8)。
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // vite.config.ts と同じ `@/` エイリアス(shadcn/ui の慣習。ADR-0008)
+    alias: { '@': new URL('./src/', import.meta.url).pathname },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

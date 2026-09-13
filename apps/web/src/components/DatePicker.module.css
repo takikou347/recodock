@@ -7,8 +7,8 @@
 .trigger {
   width: 100%;
   padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--rd-radius-md);
+  border: var(--border-width) solid var(--rd-color-border);
   background: var(--color-surface);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
@@ -35,7 +35,7 @@
   top: calc(100% + 6px);
   width: 268px;
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  border-radius: var(--rd-radius-lg);
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-dropdown);
   padding: var(--space-4);
@@ -62,8 +62,8 @@
 .navButton {
   width: 26px;
   height: 26px;
-  border-radius: var(--radius-sm);
-  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--rd-radius-sm);
+  border: var(--border-width) solid var(--rd-color-border);
   color: var(--color-ink-muted);
   display: flex;
   align-items: center;
@@ -123,11 +123,11 @@
 }
 
 .selected {
-  background: var(--color-accent);
+  background: var(--rd-color-accent);
   border-color: var(--color-ink);
   color: var(--color-surface);
 }
 
 .selected:hover {
-  background: var(--color-accent);
+  background: var(--rd-color-accent);
 }

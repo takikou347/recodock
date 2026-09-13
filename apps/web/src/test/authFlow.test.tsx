@@ -90,7 +90,8 @@ describe('サインアップ(SC-02)とパスワード再設定(SC-03)', () => {
     signedOut();
 
     renderApp({ route: '/login' });
-    await user.click(await screen.findByRole('button', { name: '新規登録' }));
+    // 画面遷移は button ではなくリンクで提供する(ADR-0008 でアクセシビリティを是正)
+    await user.click(await screen.findByRole('link', { name: '新規登録' }));
 
     expect(await screen.findByRole('heading', { name: '新規登録' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('メールアドレス'), 'kota@example.com');
@@ -120,7 +121,7 @@ describe('サインアップ(SC-02)とパスワード再設定(SC-03)', () => {
     signedOut();
 
     renderApp({ route: '/login' });
-    await user.click(await screen.findByRole('button', { name: 'お忘れですか？' }));
+    await user.click(await screen.findByRole('link', { name: 'お忘れですか？' }));
 
     expect(await screen.findByRole('heading', { name: 'パスワード再設定' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('メールアドレス'), 'kota@example.com');

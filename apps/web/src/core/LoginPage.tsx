@@ -1,15 +1,18 @@
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { AppError } from '@recodock/shared';
 
-import { Button } from '../components/Button';
-import { Icon } from '../components/icons/Icon';
-import { TextField } from '../components/TextField';
 import { useAuth } from './auth';
+import { AuthLayout } from './AuthLayout';
 
-import styles from './LoginPage.module.css';
+import { GoogleIcon } from '@/components/icons/GoogleIcon';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /** ログイン画面へ送られる際に元の遷移先を持ち回る。 */
 interface LoginLocationState {
@@ -62,76 +65,83 @@ export function LoginPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <span className={[styles.blob, styles.blobTopLeft].join(' ')} />
-      <span className={[styles.blob, styles.blobBottomRight].join(' ')} />
-      <span className={[styles.blob, styles.blobSquare].join(' ')} />
-      <span className={[styles.blob, styles.blobSmall].join(' ')} />
+    <AuthLayout
+      title="recodock"
+      description="毎日の記録を、ひとつのドックに"
+      footer={
+        <span>
+          アカウントをお持ちでないですか？{' '}
+          <Link to="/signup" className="text-foreground underline underline-offset-4">
+            新規登録
+          </Link>
+        </span>
+      }
+    >
+      <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+        {/* 入力単位ではなくフォーム単位のエラーなので、先頭にまとめて出す */}
+        {errorText ? (
+          <Alert variant="destructive">
+            <AlertDescription>{errorText}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      <form className={styles.card} onSubmit={onSubmit}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Icon name="logo" size={32} />
-          </span>
-          <h1 className={styles.brandName}>recodock</h1>
-          <p className={styles.tagline}>毎日の記録を、ひとつのドックに</p>
+        <div className="grid gap-2">
+          <Label htmlFor="login-email">メールアドレス</Label>
+          <Input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            placeholder="kota@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
         </div>
 
-        <TextField
-          label="メールアドレス"
-          type="email"
-          autoComplete="email"
-          placeholder="kota@example.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-
-        <TextField
-          label="パスワード"
-          labelAside={
-            <button type="button" onClick={() => navigate('/reset-password')}>
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="login-password">パスワード</Label>
+            <Link
+              to="/reset-password"
+              className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+            >
               お忘れですか？
-            </button>
-          }
-          type={isPasswordVisible ? 'text' : 'password'}
-          autoComplete="current-password"
-          value={password}
-          errorText={errorText}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+            </Link>
+          </div>
+          <div className="relative">
+            <Input
+              id="login-password"
+              type={isPasswordVisible ? 'text' : 'password'}
+              autoComplete="current-password"
+              className="pr-10"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground absolute top-0 right-0 size-9 hover:bg-transparent"
+              aria-label={isPasswordVisible ? 'パスワードを隠す' : 'パスワードを表示'}
+              onClick={() => setIsPasswordVisible((visible) => !visible)}
+            >
+              {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+            </Button>
+          </div>
+        </div>
 
-        <Button
-          variant="text"
-          size="sm"
-          onClick={() => setIsPasswordVisible((visible) => !visible)}
-        >
-          {isPasswordVisible ? 'パスワードを隠す' : 'パスワードを表示'}
-        </Button>
-
-        <Button type="submit" variant="primary" size="lg" isBlock disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? '処理中…' : 'ログイン'}
         </Button>
 
-        <div className={styles.divider}>
-          <span className={styles.dividerLine} />
-          または
-          <span className={styles.dividerLine} />
+        <div className="after:border-border relative text-center after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+          <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">または</span>
         </div>
 
-        <Button variant="secondary" size="lg" isBlock onClick={onGoogle}>
-          <span className={styles.googleMark} aria-hidden="true">
-            G
-          </span>
+        <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
+          <GoogleIcon className="size-4" />
           Google で続ける
         </Button>
-
-        <p className={styles.signup}>
-          アカウントをお持ちでないですか？{' '}
-          <button type="button" className={styles.signupLink} onClick={() => navigate('/signup')}>
-            新規登録
-          </button>
-        </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

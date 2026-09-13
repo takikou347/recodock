@@ -5,7 +5,7 @@
   padding: var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--color-surface-strong);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--rd-color-border);
 }
 
 .segment {
