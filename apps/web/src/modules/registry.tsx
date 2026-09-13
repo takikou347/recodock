@@ -1,8 +1,16 @@
+import {
+  BookOpenIcon,
+  CalendarDaysIcon,
+  type LucideIcon,
+  MapPinIcon,
+  PackageIcon,
+  StickyNoteIcon,
+  WalletIcon,
+} from 'lucide-react';
 import type { RouteObject } from 'react-router-dom';
 
 import type { ModuleDefinition, ModuleKey } from '@recodock/shared';
 
-import type { IconName } from '../components/icons/Icon';
 import { CalendarHomePage } from './calendar/CalendarHomePage';
 import { DayEntriesPage } from './calendar/DayEntriesPage';
 import { DiaryEditorPage } from './diary/DiaryEditorPage';
@@ -16,21 +24,13 @@ import { MoneyHomePage } from './money/MoneyHomePage';
 import { NoteEditorPage } from './notes/NoteEditorPage';
 import { NotesListPage } from './notes/NotesListPage';
 
-/** シェルの形。幅広サイドバーか、左に自前のリストを持つ画面向けのアイコンレール。 */
-export type ShellMode = 'sidebar' | 'rail';
-
-/** ルートに載せるメタ情報。AppShell が useMatches() 経由で読む。 */
-export interface RouteHandle {
-  shellMode?: ShellMode;
-}
-
 /** Web 側のモジュール登録情報(01_screen_design.md 3.4)。ルート定義を各モジュールが所有する */
 export interface WebModule {
   definition: ModuleDefinition;
   /** サイドバーのリンク先 */
   basePath: string;
-  /** サイドバー・ランチャー・タブで使うアイコン */
-  icon: IconName;
+  /** サイドバー・ランチャー・管理画面で使うアイコン(lucide。ADR-0008) */
+  icon: LucideIcon;
   /** モジュールランチャー(SC-08)・管理(SC-05)に出す説明 */
   description: string;
   /** SC-05 の追加済みリストに出す詳細 */
@@ -46,7 +46,7 @@ export interface WebModule {
 /**
  * モジュール登録(FR-02)。
  * 追加はこの配列への 1 エントリ追加だけで完結し、コア(main.tsx / App.tsx)は変更しない。
- * badgeColor は iOS(React Native)と共有するため実値を持つ。Web の配色は styles/tokens.css を正とする。
+ * badgeColor は iOS(React Native)と共有するため実値を持つ。
  */
 export const moduleRegistry: WebModule[] = [
   {
@@ -57,20 +57,12 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#4e7fb5',
     },
     basePath: '/',
-    icon: 'calendar',
+    icon: CalendarDaysIcon,
     description: '予定と繰り返し',
     detail: '予定・繰り返し・リマインド（コア／削除不可）',
     routes: [
-      {
-        index: true,
-        element: <CalendarHomePage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
-      {
-        path: 'calendar/days/:date',
-        element: <DayEntriesPage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
+      { index: true, element: <CalendarHomePage /> },
+      { path: 'calendar/days/:date', element: <DayEntriesPage /> },
     ],
   },
   {
@@ -81,7 +73,7 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#3f8c68',
     },
     basePath: '/money',
-    icon: 'money',
+    icon: WalletIcon,
     description: '収支・口座・予算',
     detail: '収支・口座・予算',
     secondaryNav: [
@@ -91,26 +83,10 @@ export const moduleRegistry: WebModule[] = [
       { label: '予算設定', path: '/money/budgets' },
     ],
     routes: [
-      {
-        path: 'money',
-        element: <MoneyHomePage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
-      {
-        path: 'money/accounts',
-        element: <AccountsPage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
-      {
-        path: 'money/categories',
-        element: <CategoriesPage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
-      {
-        path: 'money/budgets',
-        element: <BudgetsPage />,
-        handle: { shellMode: 'sidebar' } satisfies RouteHandle,
-      },
+      { path: 'money', element: <MoneyHomePage /> },
+      { path: 'money/accounts', element: <AccountsPage /> },
+      { path: 'money/categories', element: <CategoriesPage /> },
+      { path: 'money/budgets', element: <BudgetsPage /> },
     ],
   },
   {
@@ -121,25 +97,13 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#c86b4e',
     },
     basePath: '/diary',
-    icon: 'diary',
+    icon: BookOpenIcon,
     description: '本文・写真・気分',
     detail: '本文・気分タグ・写真',
     routes: [
-      {
-        path: 'diary',
-        element: <DiaryListPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
-      {
-        path: 'diary/:diaryId',
-        element: <DiaryListPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
-      {
-        path: 'diary/:diaryId/edit',
-        element: <DiaryEditorPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
+      { path: 'diary', element: <DiaryListPage /> },
+      { path: 'diary/:diaryId', element: <DiaryListPage /> },
+      { path: 'diary/:diaryId/edit', element: <DiaryEditorPage /> },
     ],
   },
   {
@@ -150,16 +114,10 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#7b5fb8',
     },
     basePath: '/items',
-    icon: 'items',
+    icon: PackageIcon,
     description: '持ち物と保証期限',
     detail: '持ち物・保証期限・保管場所',
-    routes: [
-      {
-        path: 'items',
-        element: <ItemsListPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
-    ],
+    routes: [{ path: 'items', element: <ItemsListPage /> }],
   },
   {
     definition: {
@@ -169,20 +127,12 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#a8862b',
     },
     basePath: '/notes',
-    icon: 'notes',
+    icon: StickyNoteIcon,
     description: 'Markdown メモ',
     detail: 'Markdown・ピン留め',
     routes: [
-      {
-        path: 'notes',
-        element: <NotesListPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
-      {
-        path: 'notes/:noteId',
-        element: <NoteEditorPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
-      },
+      { path: 'notes', element: <NotesListPage /> },
+      { path: 'notes/:noteId', element: <NoteEditorPage /> },
     ],
   },
   {
@@ -193,12 +143,10 @@ export const moduleRegistry: WebModule[] = [
       badgeColor: '#2e858e',
     },
     basePath: '/map',
-    icon: 'map',
+    icon: MapPinIcon,
     description: 'スポットと訪問',
     detail: 'スポット・訪問記録',
-    routes: [
-      { path: 'map', element: <MapPage />, handle: { shellMode: 'rail' } satisfies RouteHandle },
-    ],
+    routes: [{ path: 'map', element: <MapPage /> }],
   },
 ];
 

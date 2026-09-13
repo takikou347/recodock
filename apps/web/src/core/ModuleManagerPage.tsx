@@ -75,7 +75,7 @@ export function ModuleManagerPage() {
                     <Icon name="drag" size={15} />
                   </span>
                   <span className={styles.icon}>
-                    <Icon name={module.icon} size={21} />
+                    <module.icon className="size-5" />
                   </span>
                   <div className={styles.text}>
                     <p className={styles.name}>
@@ -109,7 +109,7 @@ export function ModuleManagerPage() {
                 style={toneStyle(module.definition.key)}
               >
                 <span className={styles.icon}>
-                  <Icon name={module.icon} size={21} />
+                  <module.icon className="size-5" />
                 </span>
                 <div className={styles.text}>
                   <p className={styles.name}>{module.definition.displayName}</p>

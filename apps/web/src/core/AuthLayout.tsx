@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Icon } from '@/components/icons/Icon';
+import { BrandMark } from '@/components/icons/BrandMark';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card';
 
 interface AuthLayoutProps {
@@ -18,9 +18,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
     <div className="bg-muted/40 flex min-h-svh flex-col items-center justify-center p-6">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <span className="bg-primary text-primary-foreground mx-auto mb-3 inline-flex size-11 items-center justify-center rounded-xl">
-            <Icon name="logo" size={24} />
-          </span>
+          <BrandMark size={24} className="mx-auto mb-3 rounded-xl" />
           <h1 className="font-heading text-xl leading-snug font-medium">{title}</h1>
           <CardDescription>{description}</CardDescription>
         </CardHeader>

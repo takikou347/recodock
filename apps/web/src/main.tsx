@@ -14,7 +14,6 @@ import { SearchPage } from './core/SearchPage';
 import { SettingsPage } from './core/SettingsPage';
 import { SignUpPage } from './core/SignUpPage';
 import { UserModulesProvider } from './core/userModules';
-import type { RouteHandle } from './modules/registry';
 import { moduleRegistry } from './modules/registry';
 
 import './index.css';
@@ -46,17 +45,14 @@ const router = createBrowserRouter([
       {
         path: 'search',
         element: <SearchPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
       },
       {
         path: 'modules',
         element: <ModuleManagerPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
       },
       {
         path: 'settings',
         element: <SettingsPage />,
-        handle: { shellMode: 'rail' } satisfies RouteHandle,
       },
     ],
   },
