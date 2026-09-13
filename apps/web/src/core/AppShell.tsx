@@ -133,7 +133,7 @@ function AppSidebar({ modules, activeKey, onOpenLauncher }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="recodock">
               <Link to="/" onClick={closeOnNavigate}>
-                <BrandMark size={16} className="size-8 rounded-md" />
+                <BrandMark />
                 <span className="font-heading text-base font-semibold">recodock</span>
               </Link>
             </SidebarMenuButton>
