@@ -22,16 +22,7 @@ const frame = (
 
 /** アイコン名 → SVG の中身。Icon.tsx からのみ参照する。 */
 export const ICON_PATHS = {
-  /* サービスマーク(器＋耳＋犬の顔)。カラー版は assets/brand/recodock-mark.svg */
-  logo: (
-    <>
-      {frame}
-      <circle cx="8.4" cy="12.2" r="1.5" fill="currentColor" />
-      <circle cx="15.6" cy="12.2" r="1.5" fill="currentColor" />
-      <rect x="8.9" y="14.3" width="6.2" height="4.4" rx="2.2" {...stroke} />
-      <circle cx="12" cy="15.8" r="1.05" fill="currentColor" />
-    </>
-  ),
+  /* サービスマークは components/icons/BrandMark.tsx に移した(ADR-0009) */
   /* モジュール(器＋耳＋中身)。中身は x 6–18 / y 9–19 に収め、要素は3つまで */
   calendar: (
     <>
