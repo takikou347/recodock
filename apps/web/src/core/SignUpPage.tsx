@@ -1,15 +1,16 @@
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { AppError } from '@recodock/shared';
 
-import { Button } from '../components/Button';
-import { Icon } from '../components/icons/Icon';
-import { TextField } from '../components/TextField';
 import { useAuth } from './auth';
+import { AuthLayout } from './AuthLayout';
 
-import styles from './LoginPage.module.css';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /** Supabase Auth のパスワードポリシーに合わせた最低文字数。 */
 const PASSWORD_MIN_LENGTH = 8;
@@ -61,62 +62,75 @@ export function SignUpPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <span className={[styles.blob, styles.blobTopLeft].join(' ')} />
-      <span className={[styles.blob, styles.blobBottomRight].join(' ')} />
-
-      <form className={styles.card} onSubmit={onSubmit}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Icon name="logo" size={32} />
-          </span>
-          <h1 className={styles.brandName}>新規登録</h1>
-          <p className={styles.tagline}>毎日の記録を、ひとつのドックに</p>
-        </div>
-
-        {isAwaitingEmail ? (
-          <p className={styles.notice} role="status">
+    <AuthLayout
+      title="新規登録"
+      description="毎日の記録を、ひとつのドックに"
+      footer={
+        <span>
+          アカウントをお持ちですか？{' '}
+          <Link to="/login" className="text-foreground underline underline-offset-4">
+            ログイン
+          </Link>
+        </span>
+      }
+    >
+      {isAwaitingEmail ? (
+        <Alert role="status">
+          <AlertDescription>
             確認メールを送りました。メール内のリンクを開くと登録が完了します。
-          </p>
-        ) : (
-          <>
-            <TextField
-              label="メールアドレス"
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+          {errorText ? (
+            <Alert variant="destructive">
+              <AlertDescription>{errorText}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="grid gap-2">
+            <Label htmlFor="signup-email">メールアドレス</Label>
+            <Input
+              id="signup-email"
               type="email"
               autoComplete="email"
               placeholder="kota@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <TextField
-              label="パスワード"
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="signup-password">パスワード</Label>
+            <Input
+              id="signup-password"
               type="password"
               autoComplete="new-password"
-              helperText={`${PASSWORD_MIN_LENGTH}文字以上`}
+              aria-describedby="signup-password-hint"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            <TextField
-              label="パスワード(確認)"
+            <p id="signup-password-hint" className="text-muted-foreground text-xs">
+              {PASSWORD_MIN_LENGTH}文字以上
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="signup-confirmation">パスワード(確認)</Label>
+            <Input
+              id="signup-confirmation"
               type="password"
               autoComplete="new-password"
               value={confirmation}
-              errorText={errorText}
               onChange={(event) => setConfirmation(event.target.value)}
             />
-            <Button type="submit" variant="primary" size="lg" isBlock disabled={isSubmitting}>
-              {isSubmitting ? '処理中…' : '登録する'}
-            </Button>
-          </>
-        )}
+          </div>
 
-        <p className={styles.signup}>
-          アカウントをお持ちですか？{' '}
-          <button type="button" className={styles.signupLink} onClick={() => navigate('/login')}>
-            ログイン
-          </button>
-        </p>
-      </form>
-    </div>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? '処理中…' : '登録する'}
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
   );
 }
