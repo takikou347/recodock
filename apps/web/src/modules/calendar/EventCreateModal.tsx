@@ -1,28 +1,27 @@
 import { CalendarDaysIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { AppError, type CalendarEventRecord, eventsRepo, formatTime } from '@recodock/shared';
+import {
+  AppError,
+  type CalendarEventRecord,
+  eventsRepo,
+  formatTime,
+  WEEKDAYS,
+} from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { DatePicker } from '../../components/DatePicker';
-import { Modal } from '../../components/Modal';
-import { Select } from '../../components/Select';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { Toggle } from '../../components/Toggle';
-import { useAuth } from '../../core/auth';
-import { toDateKey } from '../../lib/monthRange';
-import { supabase } from '../../lib/supabase';
-import { useCreateEvent, useUpdateEvent } from './useCalendarEntries';
-
-import styles from './EventCreateModal.module.css';
-
-const RECURRENCE_OPTIONS = [
-  { value: 'none', label: '繰り返さない' },
-  { value: 'weekly', label: '毎週（土曜）' },
-  { value: 'monthly', label: '毎月（22日）' },
-  { value: 'custom', label: 'カスタム…' },
-] as const;
+import { Button } from '@/components/Button';
+import { DatePicker } from '@/components/DatePicker';
+import { Modal } from '@/components/Modal';
+import type { SelectOption } from '@/components/Select';
+import { Select } from '@/components/Select';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { Toggle } from '@/components/Toggle';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/core/auth';
+import { toDateKey } from '@/lib/monthRange';
+import { supabase } from '@/lib/supabase';
+import { useCreateEvent, useUpdateEvent } from '@/modules/calendar/useCalendarEntries';
 
 const REMINDER_OPTIONS = [
   { value: 'none', label: 'なし' },
@@ -31,15 +30,32 @@ const REMINDER_OPTIONS = [
   { value: '60', label: '1時間前' },
 ] as const;
 
-type RecurrenceValue = (typeof RECURRENCE_OPTIONS)[number]['value'];
+type RecurrenceValue = 'none' | 'weekly' | 'monthly' | 'custom';
+type ReminderValue = (typeof REMINDER_OPTIONS)[number]['value'];
+
+/** RFC 5545 の BYDAY コード(0=日曜)。 */
+const WEEKDAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
+
+/**
+ * 繰り返しの選択肢。曜日・日にちは開始日から導く。
+ * 以前は土曜・22日が文字列に焼き込まれていて、火曜の予定でも BYDAY=SA が保存されていた。
+ */
+function buildRecurrenceOptions(startDate: Date): readonly SelectOption<RecurrenceValue>[] {
+  return [
+    { value: 'none', label: '繰り返さない' },
+    { value: 'weekly', label: `毎週（${WEEKDAYS[startDate.getDay()]}曜）` },
+    { value: 'monthly', label: `毎月（${startDate.getDate()}日）` },
+    { value: 'custom', label: 'カスタム…' },
+  ];
+}
 
 /** 画面の選択肢を RFC 5545 の RRULE に写す(CAL-03)。 */
-const RRULE_BY_OPTION: Readonly<Record<Exclude<RecurrenceValue, 'none'>, string>> = {
-  weekly: 'FREQ=WEEKLY;BYDAY=SA',
-  monthly: 'FREQ=MONTHLY',
-  custom: 'FREQ=WEEKLY',
-};
-type ReminderValue = (typeof REMINDER_OPTIONS)[number]['value'];
+function buildRrule(recurrence: RecurrenceValue, startDate: Date): string | null {
+  if (recurrence === 'none') return null;
+  if (recurrence === 'monthly') return `FREQ=MONTHLY;BYMONTHDAY=${startDate.getDate()}`;
+  // カスタムの編集 UI はまだ無いので、毎週と同じ規則で保存する
+  return `FREQ=WEEKLY;BYDAY=${WEEKDAY_CODES[startDate.getDay()]}`;
+}
 
 export interface EventCreateModalProps {
   isOpen: boolean;
@@ -106,7 +122,7 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
       endsAt: endsAt.toISOString(),
       isAllDay,
       location: location.trim() || null,
-      rrule: recurrence === 'none' ? null : RRULE_BY_OPTION[recurrence],
+      rrule: buildRrule(recurrence, startDate),
     };
     try {
       const saved = event
@@ -129,6 +145,8 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
     }
   };
 
+  const isSaving = createEvent.isPending || updateEvent.isPending;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -140,12 +158,8 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
           <Button variant="secondary" onClick={onClose}>
             キャンセル
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => void onSave()}
-            disabled={createEvent.isPending || updateEvent.isPending}
-          >
-            {createEvent.isPending || updateEvent.isPending ? '保存中…' : '保存する'}
+          <Button variant="primary" onClick={() => void onSave()} disabled={isSaving}>
+            {isSaving ? '保存中…' : '保存する'}
           </Button>
         </>
       }
@@ -155,65 +169,62 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
         value={title}
         placeholder="散歩"
         errorText={titleError}
-        onChange={(event) => setTitle(event.target.value)}
+        onChange={(changeEvent) => setTitle(changeEvent.target.value)}
       />
 
-      <div className={styles.timeRow}>
-        <div className={styles.timeField}>
-          <span className={styles.fieldLabel}>開始</span>
-          <div className={styles.dateTimePair}>
-            <DatePicker value={startDate} onChange={setStartDate} ariaLabel="開始日" />
-            {!isAllDay ? (
-              <input
-                className={styles.timeInput}
-                type="time"
-                value={startTime}
-                aria-label="開始時刻"
-                onChange={(changeEvent) => setStartTime(changeEvent.target.value)}
-              />
-            ) : null}
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="text-sm font-medium">開始</span>
+          <DatePicker value={startDate} onChange={setStartDate} ariaLabel="開始日" />
+          {!isAllDay ? (
+            <Input
+              type="time"
+              value={startTime}
+              aria-label="開始時刻"
+              className="font-mono tabular-nums"
+              onChange={(changeEvent) => setStartTime(changeEvent.target.value)}
+            />
+          ) : null}
         </div>
-        <span className={styles.arrow} aria-hidden="true">
+        <span className="text-muted-foreground hidden pb-2 sm:block" aria-hidden="true">
           →
         </span>
-        <div className={styles.timeField}>
-          <span className={styles.fieldLabel}>終了</span>
-          <div className={styles.dateTimePair}>
-            <DatePicker value={endDate} onChange={setEndDate} ariaLabel="終了日" />
-            {!isAllDay ? (
-              <input
-                className={styles.timeInput}
-                type="time"
-                value={endTime}
-                aria-label="終了時刻"
-                onChange={(changeEvent) => setEndTime(changeEvent.target.value)}
-              />
-            ) : null}
-          </div>
-        </div>
-        <div className={styles.allDay}>
-          <Toggle isOn={isAllDay} onChange={setIsAllDay} label="終日" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="text-sm font-medium">終了</span>
+          <DatePicker value={endDate} onChange={setEndDate} ariaLabel="終了日" />
+          {!isAllDay ? (
+            <Input
+              type="time"
+              value={endTime}
+              aria-label="終了時刻"
+              className="font-mono tabular-nums"
+              onChange={(changeEvent) => setEndTime(changeEvent.target.value)}
+            />
+          ) : null}
         </div>
       </div>
 
-      <div className={styles.pairRow}>
-        <div className={styles.pairField}>
-          <span className={styles.fieldLabel}>繰り返し</span>
+      <Toggle isOn={isAllDay} onChange={setIsAllDay} label="終日" />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="text-sm font-medium">繰り返し</span>
           <Select
-            options={RECURRENCE_OPTIONS}
+            options={buildRecurrenceOptions(startDate)}
             value={recurrence}
             onChange={setRecurrence}
             ariaLabel="繰り返し"
+            className="w-full"
           />
         </div>
-        <div className={styles.pairField}>
-          <span className={styles.fieldLabel}>リマインド</span>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="text-sm font-medium">リマインド</span>
           <Select
             options={REMINDER_OPTIONS}
             value={reminder}
             onChange={setReminder}
             ariaLabel="リマインド"
+            className="w-full"
           />
         </div>
       </div>

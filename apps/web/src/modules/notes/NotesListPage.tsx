@@ -1,21 +1,17 @@
-import { PlusIcon, StickyNoteIcon } from 'lucide-react';
+import { PinIcon, PlusIcon, StickyNoteIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { Icon } from '../../components/icons/Icon';
-import { QuickCreateModal } from '../../components/QuickCreateModal';
-import { Skeleton } from '../../components/Skeleton';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { moduleThemeClass } from '../../lib/moduleTheme';
-import { useCreateNote, useNotes } from './useNotes';
-
-import layout from '../../core/pageLayout.module.css';
-import styles from './NotesListPage.module.css';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { QuickCreateModal } from '@/components/QuickCreateModal';
+import { Skeleton } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
+import { useAuth } from '@/core/auth';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { useCreateNote, useNotes } from '@/modules/notes/useNotes';
 
 /** MEM-60 メモ一覧。ピン留めを上に、残りをリストで並べる。 */
 export function NotesListPage() {
@@ -34,19 +30,22 @@ export function NotesListPage() {
   };
 
   return (
-    <div className={[layout.page, moduleThemeClass('notes')].join(' ')}>
-      <div className={layout.header}>
-        <h1 className={layout.titleSm}>メモ</h1>
-        <span className={layout.count}>{totalCount}件</span>
-        <div className={layout.actions}>
+    <Page>
+      <PageHeader
+        title="メモ"
+        meta={`${totalCount} 件`}
+        actions={
           <Button variant="primary" icon={PlusIcon} onClick={() => setIsCreateOpen(true)}>
             新規メモ
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {isError ? (
-        <ErrorState title="メモを読み込めませんでした" description="接続を確認してください。" />
+        <ErrorState
+          title="メモを読み込めませんでした"
+          description="通信を確認してもう一度お試しください。"
+        />
       ) : isLoading ? (
         <Skeleton lineCount={4} hasBlock />
       ) : totalCount === 0 ? (
@@ -68,51 +67,58 @@ export function NotesListPage() {
       ) : (
         <>
           {pinnedNotes.length > 0 ? (
-            <section className={styles.group}>
-              <h2 className={[layout.sectionLabel, styles.pinnedLabel].join(' ')}>
-                <Icon name="pin" size={13} />
+            <section className="flex flex-col gap-2">
+              <h2 className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                <PinIcon className="size-3.5" aria-hidden="true" />
                 ピン留め
               </h2>
-              <div className={styles.pinnedGrid}>
+              <div className="grid gap-3 sm:grid-cols-2">
                 {pinnedNotes.map((note) => (
-                  <Card
-                    key={note.id}
-                    className={styles.pinnedCard}
-                    onClick={() => navigate(`/notes/${note.id}`)}
-                  >
-                    <span className={styles.pinnedHead}>
-                      <span className={styles.pinnedTitle}>{note.title}</span>
-                      <span className={styles.pinIcon}>
-                        <Icon name="pin" size={14} />
-                      </span>
+                  <Card key={note.id} onClick={() => navigate(`/notes/${note.id}`)}>
+                    <span className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate font-medium">{note.title}</span>
+                      <PinIcon
+                        className="text-muted-foreground size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
                     </span>
-                    <p className={styles.excerpt}>{note.excerpt}</p>
-                    <span className={styles.date}>{note.date}</span>
+                    <span className="text-muted-foreground mt-1.5 line-clamp-2 block text-sm">
+                      {note.excerpt}
+                    </span>
+                    <span className="text-muted-foreground mt-2 block font-mono text-xs tabular-nums">
+                      {note.date}
+                    </span>
                   </Card>
                 ))}
               </div>
             </section>
           ) : null}
 
-          <section className={styles.group}>
-            <h2 className={layout.sectionLabel}>すべてのメモ</h2>
-            <Card isFlush>
-              {notes.map((note) => (
-                <button
-                  key={note.id}
-                  type="button"
-                  className={styles.row}
-                  onClick={() => navigate(`/notes/${note.id}`)}
-                >
-                  <span className={styles.rowBody}>
-                    <span className={styles.rowTitle}>{note.title}</span>
-                    <span className={styles.rowExcerpt}>{note.excerpt}</span>
-                  </span>
-                  <span className={styles.rowDate}>{note.date}</span>
-                </button>
-              ))}
-            </Card>
-          </section>
+          {notes.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <h2 className="text-muted-foreground text-xs font-medium">すべてのメモ</h2>
+              <Card isFlush className="overflow-hidden">
+                {notes.map((note) => (
+                  <button
+                    key={note.id}
+                    type="button"
+                    className="hover:bg-muted/50 focus-visible:ring-ring/50 flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 focus-visible:ring-[3px] focus-visible:outline-none"
+                    onClick={() => navigate(`/notes/${note.id}`)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{note.title}</span>
+                      <span className="text-muted-foreground block truncate text-sm">
+                        {note.excerpt}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground shrink-0 font-mono text-xs tabular-nums">
+                      {note.date}
+                    </span>
+                  </button>
+                ))}
+              </Card>
+            </section>
+          ) : null}
         </>
       )}
 
@@ -122,10 +128,9 @@ export function NotesListPage() {
         title="新規メモ"
         icon={StickyNoteIcon}
         fieldLabel="メモのタイトル"
-        placeholder="鴨川で読む本リスト"
         isSaving={createNote.isPending}
         onSubmit={onCreate}
       />
-    </div>
+    </Page>
   );
 }

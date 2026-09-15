@@ -1,22 +1,35 @@
-import { PlusIcon } from 'lucide-react';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+  PlusIcon,
+  TagsIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import type { CategoryRecord } from '@recodock/shared';
 import { AppError } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { ErrorState } from '../../components/ErrorState';
-import { Icon } from '../../components/icons/Icon';
-import { Skeleton } from '../../components/Skeleton';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { moduleThemeClass } from '../../lib/moduleTheme';
-import { useCategoryActions, useCategoryGroups } from './useCategories';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { Modal } from '@/components/Modal';
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { Skeleton } from '@/components/Skeleton';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { Button as UiButton } from '@/components/ui/button';
+import { useAuth } from '@/core/auth';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { useCategoryActions, useCategoryGroups } from '@/modules/money/useCategories';
 
-import layout from '../../core/pageLayout.module.css';
-import styles from './CategoriesPage.module.css';
+const KIND_OPTIONS = [
+  { value: 'expense', label: '支出用' },
+  { value: 'income', label: '収入用' },
+] as const;
 
 /**
  * MON-25 カテゴリ管理。プリセット + ユーザー定義の追加・名称変更・並び替え(MON-03)。
@@ -30,6 +43,8 @@ export function CategoriesPage() {
   const [newName, setNewName] = useState('');
   const [newKind, setNewKind] = useState<'expense' | 'income'>('expense');
   const [errorText, setErrorText] = useState<string>();
+  const [renameTarget, setRenameTarget] = useState<CategoryRecord>();
+  const [removeTarget, setRemoveTarget] = useState<CategoryRecord>();
 
   const onAdd = async () => {
     if (!newName.trim()) {
@@ -46,17 +61,20 @@ export function CategoriesPage() {
     }
   };
 
-  const onRename = async (category: CategoryRecord) => {
-    const name = window.prompt('カテゴリ名', category.name);
-    if (!name?.trim() || name.trim() === category.name) return;
-    await rename(category.id, name.trim());
+  const onRename = async (name: string) => {
+    if (!renameTarget) return;
+    await rename(renameTarget.id, name);
+    setRenameTarget(undefined);
     showToast({ message: 'カテゴリ名を変更しました' });
   };
 
-  const onRemove = async (category: CategoryRecord) => {
+  const onRemove = async () => {
+    if (!removeTarget) return;
+    const target = removeTarget;
+    setRemoveTarget(undefined);
     try {
-      await remove(category.id);
-      showToast({ message: `${category.name}を削除しました` });
+      await remove(target.id);
+      showToast({ message: `${target.name}を削除しました` });
     } catch (error) {
       showToast({
         message:
@@ -68,15 +86,13 @@ export function CategoriesPage() {
   };
 
   return (
-    <div className={[layout.page, moduleThemeClass('money')].join(' ')}>
-      <div className={layout.header}>
-        <h1 className={layout.titleSm}>カテゴリ管理</h1>
-      </div>
+    <Page>
+      <PageHeader title="カテゴリ管理" />
 
       {isError ? (
         <ErrorState
           title="カテゴリを読み込めませんでした"
-          description="接続を確認してください。"
+          description="通信を確認してもう一度お試しください。"
           onRetry={refetch}
         />
       ) : isLoading ? (
@@ -84,8 +100,8 @@ export function CategoriesPage() {
       ) : (
         <>
           <Card>
-            <div className={styles.addRow}>
-              <div className={styles.addField}>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-56 flex-1">
                 <TextField
                   label="新しいカテゴリ"
                   value={newName}
@@ -94,30 +110,12 @@ export function CategoriesPage() {
                   onChange={(event) => setNewName(event.target.value)}
                 />
               </div>
-              <div className={styles.kindSwitch} role="radiogroup" aria-label="カテゴリの種類">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={newKind === 'expense'}
-                  className={[styles.kindOption, newKind === 'expense' ? styles.kindSelected : '']
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => setNewKind('expense')}
-                >
-                  支出用
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={newKind === 'income'}
-                  className={[styles.kindOption, newKind === 'income' ? styles.kindSelected : '']
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => setNewKind('income')}
-                >
-                  収入用
-                </button>
-              </div>
+              <SegmentedControl
+                options={KIND_OPTIONS}
+                value={newKind}
+                onChange={setNewKind}
+                ariaLabel="カテゴリの種類"
+              />
               <Button variant="primary" icon={PlusIcon} onClick={() => void onAdd()}>
                 追加
               </Button>
@@ -127,68 +125,150 @@ export function CategoriesPage() {
           <CategoryGroup
             title={`支出カテゴリ ${expenseCategories.length}`}
             categories={expenseCategories}
-            onRename={onRename}
-            onRemove={onRemove}
+            onRename={setRenameTarget}
+            onRemove={setRemoveTarget}
             onMove={move}
           />
           <CategoryGroup
             title={`収入カテゴリ ${incomeCategories.length}`}
             categories={incomeCategories}
-            onRename={onRename}
-            onRemove={onRemove}
+            onRename={setRenameTarget}
+            onRemove={setRemoveTarget}
             onMove={move}
           />
         </>
       )}
-    </div>
+
+      <CategoryRenameModal
+        category={renameTarget}
+        onSubmit={(name) => void onRename(name)}
+        onClose={() => setRenameTarget(undefined)}
+      />
+      <ConfirmDialog
+        isOpen={removeTarget !== undefined}
+        title={`${removeTarget?.name ?? ''}を削除しますか`}
+        description="取引で使われているカテゴリは削除できません。削除すると元に戻せません。"
+        confirmLabel="削除する"
+        onConfirm={() => void onRemove()}
+        onCancel={() => setRemoveTarget(undefined)}
+      />
+    </Page>
   );
 }
 
 interface CategoryGroupProps {
   title: string;
   categories: readonly CategoryRecord[];
-  onRename: (category: CategoryRecord) => Promise<void>;
-  onRemove: (category: CategoryRecord) => Promise<void>;
+  onRename: (category: CategoryRecord) => void;
+  onRemove: (category: CategoryRecord) => void;
   onMove: (category: CategoryRecord, direction: -1 | 1) => Promise<void>;
 }
 
 function CategoryGroup({ title, categories, onRename, onRemove, onMove }: CategoryGroupProps) {
   return (
-    <section className={styles.group}>
-      <h2 className={layout.sectionLabel}>{title}</h2>
-      <Card isFlush>
-        {categories.map((category, index) => (
-          <div key={category.id} className={styles.row}>
-            <span className={styles.rowName}>{category.name}</span>
-            <span className={styles.rowActions}>
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label={`${category.name}を上へ`}
-                disabled={index === 0}
-                onClick={() => void onMove(category, -1)}
+    <section className="flex flex-col gap-2">
+      <h2 className="text-muted-foreground text-sm font-medium">{title}</h2>
+      {categories.length === 0 ? (
+        <EmptyState
+          icon={TagsIcon}
+          title="カテゴリがありません"
+          description="上の欄から追加できます"
+        />
+      ) : (
+        <Card isFlush>
+          <ul>
+            {categories.map((category, index) => (
+              <li
+                key={category.id}
+                className="flex min-h-13 items-center gap-3 border-b px-4 py-2 last:border-b-0"
               >
-                <Icon name="chevronLeft" size={14} />
-              </button>
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label={`${category.name}を下へ`}
-                disabled={index === categories.length - 1}
-                onClick={() => void onMove(category, 1)}
-              >
-                <Icon name="chevronRight" size={14} />
-              </button>
-              <Button variant="text" size="sm" onClick={() => void onRename(category)}>
-                名称変更
-              </Button>
-              <Button variant="text" size="sm" onClick={() => void onRemove(category)}>
-                削除
-              </Button>
-            </span>
-          </div>
-        ))}
-      </Card>
+                <span className="min-w-0 flex-1 truncate font-medium">{category.name}</span>
+                <span className="flex items-center gap-1">
+                  <UiButton
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${category.name}を上へ`}
+                    disabled={index === 0}
+                    onClick={() => void onMove(category, -1)}
+                  >
+                    <ChevronUpIcon />
+                  </UiButton>
+                  <UiButton
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${category.name}を下へ`}
+                    disabled={index === categories.length - 1}
+                    onClick={() => void onMove(category, 1)}
+                  >
+                    <ChevronDownIcon />
+                  </UiButton>
+                  <UiButton
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${category.name}の名称を変更`}
+                    onClick={() => onRename(category)}
+                  >
+                    <PencilIcon />
+                  </UiButton>
+                  <UiButton
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${category.name}を削除`}
+                    onClick={() => onRemove(category)}
+                  >
+                    <Trash2Icon />
+                  </UiButton>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </section>
+  );
+}
+
+interface CategoryRenameModalProps {
+  category: CategoryRecord | undefined;
+  onSubmit: (name: string) => void;
+  onClose: () => void;
+}
+
+/** 名称変更。window.prompt はモーダルの外観・フォーカス制御を合わせられないので使わない。 */
+function CategoryRenameModal({ category, onSubmit, onClose }: CategoryRenameModalProps) {
+  const [name, setName] = useState('');
+  const [loadedId, setLoadedId] = useState<string>();
+
+  // 開き直したときに対象の名前を読み込む
+  if (category && category.id !== loadedId) {
+    setLoadedId(category.id);
+    setName(category.name);
+  }
+
+  const isUnchanged = !name.trim() || name.trim() === category?.name;
+
+  return (
+    <Modal
+      isOpen={category !== undefined}
+      onClose={onClose}
+      title="カテゴリ名を変更"
+      icon={PencilIcon}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button variant="primary" disabled={isUnchanged} onClick={() => onSubmit(name.trim())}>
+            変更する
+          </Button>
+        </>
+      }
+    >
+      <TextField
+        label="カテゴリ名"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+    </Modal>
   );
 }

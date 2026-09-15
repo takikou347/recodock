@@ -1,21 +1,19 @@
 import { SearchIcon } from 'lucide-react';
-import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { ModuleKey } from '@recodock/shared';
 
-import { Card } from '../components/Card';
-import { Chip } from '../components/Chip';
-import { EmptyState } from '../components/EmptyState';
-import { ErrorState } from '../components/ErrorState';
-import { Icon } from '../components/icons/Icon';
-import { Skeleton } from '../components/Skeleton';
-import { findModule } from '../modules/registry';
 import { useSearchEntries } from './useSearchEntries';
 
-import layout from './pageLayout.module.css';
-import styles from './SearchPage.module.css';
+import { Chip } from '@/components/Chip';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { SearchField } from '@/components/SearchField';
+import { Skeleton } from '@/components/Skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Page, PageHeader, PageToolbar } from '@/core/PageLayout';
+import { findModule } from '@/modules/registry';
 
 type ModuleFilter = ModuleKey | 'all';
 
@@ -33,46 +31,49 @@ export function SearchPage() {
     filter === 'all' ? entries : entries.filter((entry) => entry.moduleKey === filter);
 
   return (
-    <div className={layout.page}>
-      <h1 className={layout.titleSm}>横断検索</h1>
+    <Page>
+      <PageHeader title="横断検索" meta={query ? `${entries.length} 件` : undefined} />
 
-      <div className={styles.searchBox}>
-        <Icon name="search" size={18} />
-        <input
-          className={styles.input}
-          type="search"
-          value={query}
-          placeholder="すべての記録を検索"
-          aria-label="すべての記録を検索"
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <span className={styles.meta}>search_entries ビュー · {entries.length} 件</span>
-      </div>
+      <SearchField
+        value={query}
+        onValueChange={setQuery}
+        ariaLabel="すべての記録を検索"
+        placeholder="すべての記録を検索"
+        className="max-w-xl"
+      />
 
-      <div className={layout.filters} role="group" aria-label="モジュールで絞り込み">
-        <Chip isSelected={filter === 'all'} onClick={() => setFilter('all')}>
-          すべて
-        </Chip>
-        {[...countsByModule].map(([moduleKey, count]) => (
-          <Chip
-            key={moduleKey}
-            count={count}
-            isSelected={filter === moduleKey}
-            onClick={() => setFilter(moduleKey)}
-          >
-            {findModule(moduleKey)?.definition.displayName ?? moduleKey}
+      {countsByModule.size > 0 ? (
+        <PageToolbar role="group" aria-label="モジュールで絞り込み">
+          <Chip isSelected={filter === 'all'} onClick={() => setFilter('all')}>
+            すべて
           </Chip>
-        ))}
-      </div>
+          {[...countsByModule].map(([moduleKey, count]) => (
+            <Chip
+              key={moduleKey}
+              count={count}
+              isSelected={filter === moduleKey}
+              onClick={() => setFilter(moduleKey)}
+            >
+              {findModule(moduleKey)?.definition.displayName ?? moduleKey}
+            </Chip>
+          ))}
+        </PageToolbar>
+      ) : null}
 
       {isError ? (
         <ErrorState
           title="検索できませんでした"
-          description="接続を確認してもう一度お試しください。"
+          description="通信を確認してもう一度お試しください。"
           onRetry={() => setQuery((current) => current)}
         />
       ) : isLoading ? (
-        <Skeleton lineCount={4} hasBlock />
+        <Skeleton lineCount={4} />
+      ) : query.trim() === '' ? (
+        <EmptyState
+          icon={SearchIcon}
+          title="キーワードを入れて検索"
+          description="予定・収支・日記・持ち物・メモ・スポットをまとめて探せます"
+        />
       ) : visibleEntries.length === 0 ? (
         <EmptyState
           icon={SearchIcon}
@@ -80,27 +81,29 @@ export function SearchPage() {
           description="キーワードを変えるか、フィルタを外してみてください"
         />
       ) : (
-        <div className={styles.results}>
-          {visibleEntries.map((entry) => {
-            const toneStyle: CSSProperties = {
-              '--tone-bg': `var(--color-${entry.moduleKey}-bg)`,
-              '--tone-fg': `var(--color-${entry.moduleKey}-fg)`,
-            } as CSSProperties;
-            return (
-              <Card key={entry.id} isRow onClick={() => navigate(entry.href)}>
-                <div className={styles.result} style={toneStyle}>
-                  <span className={styles.badge}>{entry.moduleLabel}</span>
-                  <div className={styles.body}>
-                    <p className={styles.title}>{entry.title}</p>
-                    <p className={styles.snippet}>{entry.snippet}</p>
-                  </div>
-                  <span className={styles.date}>{entry.date}</span>
+        <ul className="flex flex-col gap-2">
+          {visibleEntries.map((entry) => (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className="bg-card hover:bg-muted/50 focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                onClick={() => navigate(entry.href)}
+              >
+                <Badge variant="outline" className="shrink-0">
+                  {entry.moduleLabel}
+                </Badge>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{entry.title}</p>
+                  <p className="text-muted-foreground truncate text-xs">{entry.snippet}</p>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
+                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                  {entry.date}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+    </Page>
   );
 }

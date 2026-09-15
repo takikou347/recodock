@@ -40,9 +40,9 @@ export function Modal({
     <Dialog open={isOpen} onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent className="max-h-[calc(100svh-2rem)] gap-4 overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {Icon ? <Icon className="text-muted-foreground size-4" /> : null}
-            {title}
+          <DialogTitle className="flex min-w-0 items-center gap-2">
+            {Icon ? <Icon className="text-muted-foreground size-4 shrink-0" /> : null}
+            <span className="truncate">{title}</span>
           </DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>

@@ -1,35 +1,24 @@
-import type { CSSProperties } from 'react';
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon } from 'lucide-react';
 
-import type { ModuleKey } from '@recodock/shared';
-
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { Icon } from '../components/icons/Icon';
-import { useToast } from '../components/Toast';
-import type { WebModule } from '../modules/registry';
-import { findModule, moduleRegistry } from '../modules/registry';
 import { CORE_MODULE_KEY, useUserModules } from './userModules';
 
-import styles from './ModuleManagerPage.module.css';
-import layout from './pageLayout.module.css';
+import { useToast } from '@/components/Toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Page, PageHeader } from '@/core/PageLayout';
+import type { WebModule } from '@/modules/registry';
+import { findModule, moduleRegistry } from '@/modules/registry';
 
 /** iOS のタブに載るのは上位4件。残りは「その他」に入る(01_screen_design.md 3.3)。 */
 const IOS_TAB_SLOT_COUNT = 4;
 
-function toneStyle(moduleKey: ModuleKey): CSSProperties {
-  return {
-    '--tone-bg': `var(--color-${moduleKey}-bg)`,
-    '--tone-line': `var(--color-${moduleKey}-line)`,
-    '--tone-fg': `var(--color-${moduleKey}-fg)`,
-  } as CSSProperties;
-}
-
 /**
  * SC-05 モジュール管理。
  * 追加済みモジュールの並び順が Web サイドバーと iOS タブ(上位4件＋その他)に即反映される。
+ * 並べ替えはドラッグではなく上下ボタンで行う。キーボードだけで操作でき、読み上げにも乗るため。
  */
 export function ModuleManagerPage() {
-  const { addedKeys, addModule, removeModule } = useUserModules();
+  const { addedKeys, addModule, removeModule, reorderModule } = useUserModules();
   const { showToast } = useToast();
 
   const addedModules = addedKeys
@@ -53,76 +42,111 @@ export function ModuleManagerPage() {
   };
 
   return (
-    <div className={layout.page}>
-      <div>
-        <h1 className={layout.titleSm}>モジュール管理</h1>
-        <p className={layout.subtitle}>
-          追加したモジュールだけが並びます。並び順は Web サイドバーと iOS
-          タブ（上位4件＋その他）に即反映。
-        </p>
-      </div>
+    <Page className="max-w-3xl">
+      <PageHeader
+        title="モジュール管理"
+        description="追加したモジュールだけが並びます。並び順は Web サイドバーと iOS タブ(上位 4 件＋その他)に即反映されます。"
+      />
 
-      <div className={styles.groups}>
-        <section className={styles.group}>
-          <h2 className={layout.sectionLabel}>追加済み {addedModules.length}</h2>
+      <section className="flex flex-col gap-2">
+        <h2 className="text-muted-foreground text-xs font-medium">
+          追加済み {addedModules.length} 件
+        </h2>
+        <ul className="flex flex-col gap-2">
           {addedModules.map((module, index) => {
-            const moduleKey = module.definition.key;
-            const isCore = moduleKey === CORE_MODULE_KEY;
+            const ModuleIcon = module.icon;
+            const isCore = module.definition.key === CORE_MODULE_KEY;
             return (
-              <Card key={moduleKey} isRow>
-                <div className={styles.row} style={toneStyle(moduleKey)}>
-                  <span className={styles.dragHandle} aria-hidden="true">
-                    <Icon name="drag" size={15} />
-                  </span>
-                  <span className={styles.icon}>
-                    <module.icon className="size-5" />
-                  </span>
-                  <div className={styles.text}>
-                    <p className={styles.name}>
-                      {module.definition.brandName} ／ {module.definition.displayName}
-                    </p>
-                    <p className={styles.desc}>{module.detail}</p>
-                  </div>
-                  {index < IOS_TAB_SLOT_COUNT ? (
-                    <span className={styles.tabBadge}>iOSタブ {index + 1}</span>
-                  ) : null}
-                  {isCore ? (
-                    <span className={styles.coreBadge}>コア</span>
-                  ) : (
-                    <Button variant="text" size="sm" onClick={() => onRemove(module)}>
-                      削除
-                    </Button>
-                  )}
+              <li
+                key={module.definition.key}
+                className="bg-card flex items-center gap-3 rounded-xl border p-3"
+              >
+                <div className="flex flex-col">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`${module.definition.displayName}を上へ`}
+                    disabled={index === 0}
+                    onClick={() => reorderModule(module.definition.key, index - 1)}
+                  >
+                    <ChevronUpIcon />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`${module.definition.displayName}を下へ`}
+                    disabled={index === addedModules.length - 1}
+                    onClick={() => reorderModule(module.definition.key, index + 1)}
+                  >
+                    <ChevronDownIcon />
+                  </Button>
                 </div>
-              </Card>
+                <ModuleIcon className="text-muted-foreground size-5 shrink-0" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {module.definition.brandName} ／ {module.definition.displayName}
+                  </p>
+                  <p className="text-muted-foreground truncate text-xs">{module.detail}</p>
+                </div>
+                {index < IOS_TAB_SLOT_COUNT ? (
+                  <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
+                    iOS タブ {index + 1}
+                  </Badge>
+                ) : null}
+                {isCore ? (
+                  <Badge variant="secondary" className="shrink-0">
+                    コア
+                  </Badge>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`${module.definition.displayName}を削除`}
+                    onClick={() => onRemove(module)}
+                  >
+                    削除
+                  </Button>
+                )}
+              </li>
             );
           })}
-        </section>
+        </ul>
+      </section>
 
-        {addableModules.length > 0 ? (
-          <section className={styles.group}>
-            <h2 className={layout.sectionLabel}>追加できるモジュール</h2>
-            {addableModules.map((module) => (
-              <div
-                key={module.definition.key}
-                className={styles.addableRow}
-                style={toneStyle(module.definition.key)}
-              >
-                <span className={styles.icon}>
-                  <module.icon className="size-5" />
-                </span>
-                <div className={styles.text}>
-                  <p className={styles.name}>{module.definition.displayName}</p>
-                  <p className={styles.desc}>{module.detail}</p>
-                </div>
-                <Button variant="ink" size="sm" onClick={() => onAdd(module)}>
-                  ＋ 追加
-                </Button>
-              </div>
-            ))}
-          </section>
-        ) : null}
-      </div>
-    </div>
+      {addableModules.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-muted-foreground text-xs font-medium">追加できるモジュール</h2>
+          <ul className="flex flex-col gap-2">
+            {addableModules.map((module) => {
+              const ModuleIcon = module.icon;
+              return (
+                <li
+                  key={module.definition.key}
+                  className="flex items-center gap-3 rounded-xl border border-dashed p-3"
+                >
+                  <ModuleIcon
+                    className="text-muted-foreground size-5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{module.definition.displayName}</p>
+                    <p className="text-muted-foreground truncate text-xs">{module.detail}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`${module.definition.displayName}を追加`}
+                    onClick={() => onAdd(module)}
+                  >
+                    <PlusIcon />
+                    追加
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+    </Page>
   );
 }

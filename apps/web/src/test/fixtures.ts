@@ -17,11 +17,16 @@ export const TEST_USER = {
   displayName: '瀧川皓太',
 };
 
+/**
+ * 並び順は sortOrder が正で、配列順とはわざとずらしてある。
+ * 無効化した行(items)も混ぜてあり、これが無いと isEnabled の絞り込みが効いていなくても通ってしまう。
+ */
 export const userModules: UserModule[] = [
-  { moduleKey: 'calendar', isEnabled: true, sortOrder: 0 },
-  { moduleKey: 'money', isEnabled: true, sortOrder: 1 },
-  { moduleKey: 'diary', isEnabled: true, sortOrder: 2 },
   { moduleKey: 'map', isEnabled: true, sortOrder: 3 },
+  { moduleKey: 'calendar', isEnabled: true, sortOrder: 0 },
+  { moduleKey: 'items', isEnabled: false, sortOrder: 4 },
+  { moduleKey: 'diary', isEnabled: true, sortOrder: 2 },
+  { moduleKey: 'money', isEnabled: true, sortOrder: 1 },
 ];
 
 export const events: CalendarEventRecord[] = [
@@ -93,6 +98,18 @@ export const transactions: TransactionRecord[] = [
     transferAccountId: null,
     categoryId: 'category-salary',
     memo: '8月分 給与',
+  },
+  // 振替の両側(出金元 −・入金先 +)は最優先のテスト対象(CLAUDE.md)。
+  // 1 件も無いと calcAccountBalance の振替分岐が画面経由で一度も走らない
+  {
+    id: 'tx-3',
+    kind: 'transfer',
+    amount: 30000,
+    occurredOn: '2026-08-20',
+    accountId: 'account-1',
+    transferAccountId: 'account-2',
+    categoryId: null,
+    memo: '現金を引き出し',
   },
 ];
 
@@ -196,6 +213,14 @@ export const accounts = [
     kind: 'cash' as const,
     initialBalance: 20000,
     isArchived: false,
+  },
+  // 総残高から除外されることを見るために閉じた口座も置く
+  {
+    id: 'account-3',
+    name: '解約した口座',
+    kind: 'bank' as const,
+    initialBalance: 999999,
+    isArchived: true,
   },
 ];
 

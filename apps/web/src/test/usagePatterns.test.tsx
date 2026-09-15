@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   diariesRepo,
+  entriesRepo,
   eventsRepo,
   itemsRepo,
   moneyRepo,
@@ -88,6 +89,27 @@ describe('予定作成(CAL-12): FAB から予定を保存する', () => {
     await waitFor(() => expect(eventsRepo.create).toHaveBeenCalled());
     const [, , input] = vi.mocked(eventsRepo.create).mock.calls[0] ?? [];
     expect(input?.rrule).toBe('FREQ=WEEKLY;BYDAY=SA');
+  });
+
+  // BYDAY が土曜に焼き込まれていた時期があり、「今日」が土曜だと気づけなかった。
+  // 曜日の違う日でも開始日から導出されることを見る
+  it('繰り返しの曜日は開始日から決まる', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.setSystemTime(new Date(2026, 7, 25, 10, 0)); // 火曜
+    renderApp({ route: '/' });
+
+    await user.click(await screen.findByRole('button', { name: '記録を追加' }));
+    await user.click(await screen.findByRole('menuitem', { name: '予定を作成' }));
+
+    const dialog = await screen.findByRole('dialog', { name: '予定を作成' });
+    await user.type(within(dialog).getByLabelText('タイトル'), '朝会');
+    await user.click(within(dialog).getByRole('combobox', { name: '繰り返し' }));
+    await user.click(await screen.findByRole('option', { name: /毎週/ }));
+    await user.click(within(dialog).getByRole('button', { name: '保存する' }));
+
+    await waitFor(() => expect(eventsRepo.create).toHaveBeenCalled());
+    const [, , input] = vi.mocked(eventsRepo.create).mock.calls[0] ?? [];
+    expect(input?.rrule).toBe('FREQ=WEEKLY;BYDAY=TU');
   });
 });
 
@@ -205,9 +227,7 @@ describe('モジュール管理(SC-05 / SC-08): 使うものだけ追加する',
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderApp({ route: '/modules' });
 
-    const addable = await screen.findByText('持ち物');
-    const row = addable.closest('div')?.parentElement;
-    await user.click(within(row as HTMLElement).getByRole('button', { name: /追加/ }));
+    await user.click(await screen.findByRole('button', { name: '持ち物を追加' }));
 
     await waitFor(() => expect(userModulesRepo.add).toHaveBeenCalled());
     const [, , moduleKey] = vi.mocked(userModulesRepo.add).mock.calls[0] ?? [];
@@ -217,23 +237,31 @@ describe('モジュール管理(SC-05 / SC-08): 使うものだけ追加する',
   it('コアのカレンダーには削除ボタンが出ない(FR-01)', async () => {
     renderApp({ route: '/modules' });
 
-    const calendarRow = (await screen.findByText(/Reco Calendar/)).closest('div')
-      ?.parentElement as HTMLElement;
-    expect(within(calendarRow).getByText('コア')).toBeInTheDocument();
-    expect(within(calendarRow).queryByRole('button', { name: '削除' })).not.toBeInTheDocument();
+    expect(await screen.findByText(/Reco Calendar/)).toBeInTheDocument();
+    expect(screen.getByText('コア')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'カレンダーを削除' })).not.toBeInTheDocument();
   });
 
   it('追加済みモジュールを削除すると無効化される(データは保持)', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderApp({ route: '/modules' });
 
-    const moneyRow = (await screen.findByText(/Reco Money/)).closest('div')
-      ?.parentElement as HTMLElement;
-    await user.click(within(moneyRow).getByRole('button', { name: '削除' }));
+    await user.click(await screen.findByRole('button', { name: '家計簿を削除' }));
 
     await waitFor(() =>
       expect(userModulesRepo.setEnabled).toHaveBeenCalledWith(expect.anything(), 'money', false),
     );
+  });
+
+  it('並べ替えボタンで順番を入れ替えられる(H-5)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ route: '/modules' });
+
+    await user.click(await screen.findByRole('button', { name: '家計簿を上へ' }));
+
+    await waitFor(() => expect(userModulesRepo.reorder).toHaveBeenCalled());
+    const [, keys] = vi.mocked(userModulesRepo.reorder).mock.calls[0] ?? [];
+    expect(keys?.slice(0, 2)).toEqual(['money', 'calendar']);
   });
 });
 
@@ -242,11 +270,13 @@ describe('横断検索(SC-07): 全モジュールを1本の入力で探す', () 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderApp({ route: '/search' });
 
-    const input = await screen.findByRole('searchbox', { name: 'すべての記録を検索' });
+    const input = await screen.findByRole('textbox', { name: 'すべての記録を検索' });
     await user.type(input, '鴨川');
 
     expect(await screen.findByText('鴨川で読む本リスト')).toBeInTheDocument();
     expect(screen.getByText('鴨川 三条')).toBeInTheDocument();
+    // モックは引数を無視して固定値を返すので、入力がリポジトリまで届いたことも見る
+    expect(entriesRepo.searchEntries).toHaveBeenCalledWith(expect.anything(), '鴨川');
 
     // モジュールのチップで絞る
     const filters = screen.getByRole('group', { name: 'モジュールで絞り込み' });
@@ -388,10 +418,13 @@ describe('家計簿の管理画面(MON-23〜26)', () => {
   it('口座一覧に「開始残高＋取引の積み上げ」の残高が出る(MON-02)', async () => {
     renderApp({ route: '/money/accounts' });
 
-    // 三菱UFJ: 100,000 + 収入280,000 − 支出1,280 = 378,720
-    expect(await screen.findByText('¥378,720')).toBeInTheDocument();
-    // 総残高 = 378,720 + 現金 20,000
+    // 三菱UFJ: 100,000 + 収入 280,000 − 支出 1,280 − 振替の出金 30,000 = 348,720
+    expect(await screen.findByText('¥348,720')).toBeInTheDocument();
+    // 現金: 20,000 + 振替の入金 30,000 = 50,000
+    expect(screen.getByText('¥50,000')).toBeInTheDocument();
+    // 総残高 = 348,720 + 50,000。解約した口座(999,999)は含めない
     expect(screen.getByText('¥398,720')).toBeInTheDocument();
+    expect(screen.queryByText('¥999,999')).not.toBeInTheDocument();
   });
 
   it('口座を追加すると accounts に登録される(MON-24)', async () => {
@@ -458,7 +491,8 @@ describe('家計簿の管理画面(MON-23〜26)', () => {
     renderApp({ route: '/money' });
 
     expect(await screen.findByText('スーパーで買い物')).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText('口座で絞り込み'), 'account-2');
+    await user.click(screen.getByRole('combobox', { name: '口座で絞り込み' }));
+    await user.click(await screen.findByRole('option', { name: '現金' }));
 
     await waitFor(() => expect(screen.queryByText('スーパーで買い物')).not.toBeInTheDocument());
   });
@@ -503,6 +537,9 @@ describe('メモ編集(MEM-61)とスポット(MAP-71/72)', () => {
     await user.click(await screen.findByRole('button', { name: /スポットを追加/ }));
     const dialog = await screen.findByRole('dialog', { name: 'スポットを追加' });
     await user.type(within(dialog).getByLabelText('場所名'), '出町柳デルタ');
+    // 座標は必須。空のまま保存すると、本人が置いていない場所が記録として残る
+    await user.type(within(dialog).getByLabelText('緯度'), '35.0316');
+    await user.type(within(dialog).getByLabelText('経度'), '135.7712');
     await user.click(within(dialog).getByRole('radio', { name: '行きたい' }));
     await user.click(within(dialog).getByRole('button', { name: '保存する' }));
 

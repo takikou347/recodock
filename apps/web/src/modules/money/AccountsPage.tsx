@@ -1,25 +1,22 @@
 import { PlusIcon, WalletIcon } from 'lucide-react';
-import type { CSSProperties } from 'react';
 import { useState } from 'react';
 
 import { AppError, formatAmount } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { Modal } from '../../components/Modal';
-import { Select } from '../../components/Select';
-import { Skeleton } from '../../components/Skeleton';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { moduleThemeClass } from '../../lib/moduleTheme';
-import type { AccountFormValue, AccountWithBalance } from './useAccounts';
-import { useAccountsWithBalance, useSaveAccount } from './useAccounts';
-
-import layout from '../../core/pageLayout.module.css';
-import styles from './AccountsPage.module.css';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { Modal } from '@/components/Modal';
+import { Select } from '@/components/Select';
+import { Skeleton } from '@/components/Skeleton';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { useAuth } from '@/core/auth';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { cn } from '@/lib/utils';
+import type { AccountFormValue, AccountWithBalance } from '@/modules/money/useAccounts';
+import { useAccountsWithBalance, useSaveAccount } from '@/modules/money/useAccounts';
 
 const KIND_OPTIONS = [
   { value: 'cash', label: '現金' },
@@ -44,21 +41,21 @@ export function AccountsPage() {
   const [editing, setEditing] = useState<AccountWithBalance | 'new'>();
 
   return (
-    <div className={[layout.page, moduleThemeClass('money')].join(' ')}>
-      <div className={layout.header}>
-        <h1 className={layout.titleSm}>口座・残高</h1>
-        <span className={layout.count}>{accounts.length}件</span>
-        <div className={layout.actions}>
+    <Page>
+      <PageHeader
+        title="口座・残高"
+        meta={`${accounts.length} 件`}
+        actions={
           <Button variant="primary" icon={PlusIcon} onClick={() => setEditing('new')}>
             口座を追加
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {isError ? (
         <ErrorState
           title="口座を読み込めませんでした"
-          description="接続を確認してください。"
+          description="通信を確認してもう一度お試しください。"
           onRetry={refetch}
         />
       ) : isLoading ? (
@@ -77,26 +74,28 @@ export function AccountsPage() {
       ) : (
         <>
           <Card>
-            <p className={styles.totalLabel}>総残高</p>
-            <p className={styles.totalValue}>{formatAmount(totalBalance)}</p>
+            <p className="text-muted-foreground text-sm font-medium">総残高</p>
+            <p className="mt-1 font-mono text-3xl font-semibold tabular-nums">
+              {formatAmount(totalBalance)}
+            </p>
           </Card>
 
-          <div className={styles.list}>
+          <div className="flex flex-col gap-2">
             {accounts.map((account) => (
               <Card key={account.id} isRow onClick={() => setEditing(account)}>
-                <span className={styles.row}>
-                  <span className={styles.rowBody}>
-                    <span className={styles.rowName}>{account.name}</span>
-                    <span className={styles.rowKind}>{KIND_LABELS[account.kind]}</span>
+                <span className="flex items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{account.name}</span>
+                    <span className="text-muted-foreground block text-sm">
+                      {KIND_LABELS[account.kind]}
+                    </span>
                   </span>
                   <span
-                    className={styles.rowBalance}
-                    style={
-                      {
-                        '--balance-color':
-                          account.balance < 0 ? 'var(--color-danger-active)' : 'var(--color-ink)',
-                      } as CSSProperties
-                    }
+                    className={cn(
+                      'shrink-0 font-mono text-lg font-semibold tabular-nums',
+                      // マイナス残高は見落とすと困るので、符号の意味としてだけ色を足す
+                      account.balance < 0 && 'text-red-600 dark:text-red-400',
+                    )}
                   >
                     {formatAmount(account.balance)}
                   </span>
@@ -112,7 +111,7 @@ export function AccountsPage() {
         account={editing === 'new' ? undefined : editing}
         onClose={() => setEditing(undefined)}
       />
-    </div>
+    </Page>
   );
 }
 
@@ -190,9 +189,15 @@ function AccountEditModal({ isOpen, account, onClose }: AccountEditModalProps) {
         errorText={errorText}
         onChange={(event) => setName(event.target.value)}
       />
-      <div>
-        <span className={styles.fieldLabel}>種別</span>
-        <Select options={KIND_OPTIONS} value={kind} onChange={setKind} ariaLabel="口座の種別" />
+      <div className="grid gap-2">
+        <span className="text-sm font-medium">種別</span>
+        <Select
+          options={KIND_OPTIONS}
+          value={kind}
+          onChange={setKind}
+          ariaLabel="口座の種別"
+          className="w-full"
+        />
       </div>
       <TextField
         label="開始残高"

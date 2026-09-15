@@ -1,3 +1,7 @@
+import type { ReactNode } from 'react';
+import { useId } from 'react';
+
+import { Label } from '@/components/ui/label';
 import {
   Select as UiSelect,
   SelectContent,
@@ -16,7 +20,10 @@ export interface SelectProps<T extends string> {
   options: readonly SelectOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** 読み上げ用の名前。label を出すときも引き続き必須(短い名前にできる) */
   ariaLabel: string;
+  /** 見える形のラベル。渡すと htmlFor で結びつける(監査 H-12) */
+  label?: ReactNode;
   className?: string;
   isDisabled?: boolean;
 }
@@ -30,12 +37,14 @@ export function Select<T extends string>({
   value,
   onChange,
   ariaLabel,
+  label,
   className,
   isDisabled,
 }: SelectProps<T>) {
-  return (
+  const id = useId();
+  const trigger = (
     <UiSelect value={value} onValueChange={(next) => onChange(next as T)} disabled={isDisabled}>
-      <SelectTrigger aria-label={ariaLabel} className={cn('w-auto', className)}>
+      <SelectTrigger id={id} aria-label={ariaLabel} className={cn('w-auto', className)}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -46,5 +55,13 @@ export function Select<T extends string>({
         ))}
       </SelectContent>
     </UiSelect>
+  );
+
+  if (!label) return trigger;
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      {trigger}
+    </div>
   );
 }

@@ -1,22 +1,20 @@
-import type { CSSProperties } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppError, formatAmount, formatYearMonth } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { ErrorState } from '../../components/ErrorState';
-import { Icon } from '../../components/icons/Icon';
-import { Skeleton } from '../../components/Skeleton';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { shiftMonth } from '../../lib/calendarGrid';
-import { moduleThemeClass } from '../../lib/moduleTheme';
-import { useBudgetStatus, useSaveBudget } from './useBudgets';
-
-import layout from '../../core/pageLayout.module.css';
-import styles from './BudgetsPage.module.css';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ErrorState } from '@/components/ErrorState';
+import { Skeleton } from '@/components/Skeleton';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { Button as UiButton } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/core/auth';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { shiftMonth } from '@/lib/calendarGrid';
+import { useBudgetStatus, useSaveBudget } from '@/modules/money/useBudgets';
 
 /**
  * MON-26 予算設定。帳簿全体の月次予算と消化率(MON-06)。
@@ -52,33 +50,35 @@ export function BudgetsPage() {
   };
 
   return (
-    <div className={[layout.page, moduleThemeClass('money')].join(' ')}>
-      <div className={layout.header}>
-        <h1 className={layout.titleSm}>予算設定 ／ {formatYearMonth(month)}</h1>
-        <div className={layout.monthNav}>
-          <button
-            type="button"
-            className={layout.monthNavButton}
-            aria-label="前の月"
-            onClick={() => setMonth((current) => shiftMonth(current, -1))}
-          >
-            <Icon name="chevronLeft" size={14} />
-          </button>
-          <button
-            type="button"
-            className={layout.monthNavButton}
-            aria-label="次の月"
-            onClick={() => setMonth((current) => shiftMonth(current, 1))}
-          >
-            <Icon name="chevronRight" size={14} />
-          </button>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title={`予算設定 ／ ${formatYearMonth(month)}`}
+        actions={
+          <div className="flex items-center gap-1">
+            <UiButton
+              variant="outline"
+              size="icon-sm"
+              aria-label="前の月"
+              onClick={() => setMonth((current) => shiftMonth(current, -1))}
+            >
+              <ChevronLeftIcon />
+            </UiButton>
+            <UiButton
+              variant="outline"
+              size="icon-sm"
+              aria-label="次の月"
+              onClick={() => setMonth((current) => shiftMonth(current, 1))}
+            >
+              <ChevronRightIcon />
+            </UiButton>
+          </div>
+        }
+      />
 
       {isError ? (
         <ErrorState
           title="予算を読み込めませんでした"
-          description="接続を確認してください。"
+          description="通信を確認してもう一度お試しください。"
           onRetry={refetch}
         />
       ) : isLoading ? (
@@ -86,41 +86,34 @@ export function BudgetsPage() {
       ) : (
         <>
           <Card>
-            <div className={styles.statusHead}>
-              <p className={styles.statusLabel}>今月の予算</p>
-              <p className={styles.statusBudget}>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-muted-foreground text-sm font-medium">今月の予算</p>
+              <p className="font-mono text-2xl font-semibold tabular-nums">
                 {totalBudget > 0 ? formatAmount(totalBudget) : '未設定'}
               </p>
             </div>
             {totalBudget > 0 ? (
               <>
-                <div
-                  className={styles.meter}
-                  role="meter"
+                {/* 100% を超えても棒は振り切らせ、超過は下の文言で伝える */}
+                <Progress
+                  className="mt-3 h-2"
+                  value={Math.min(rate, 100)}
                   aria-label="予算消化率"
-                  aria-valuenow={rate}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <span
-                    className={styles.meterFill}
-                    style={{ '--meter-width': `${Math.min(rate, 100)}%` } as CSSProperties}
-                  />
-                </div>
-                <p className={styles.statusDetail}>
+                />
+                <p className="text-muted-foreground mt-2.5 text-sm">
                   消化率 {rate}% ／ 支出 {formatAmount(expense)} ／ 残り {formatAmount(remaining)}
                 </p>
               </>
             ) : (
-              <p className={styles.statusDetail}>
+              <p className="text-muted-foreground mt-2.5 text-sm">
                 月の予算を設定すると、家計簿ホームに消化率が出ます
               </p>
             )}
           </Card>
 
           <Card>
-            <div className={styles.form}>
-              <div className={styles.formField}>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-56 flex-1">
                 <TextField
                   label="月の予算(帳簿全体)"
                   type="number"
@@ -143,20 +136,27 @@ export function BudgetsPage() {
           </Card>
 
           {categoryRows.length > 0 ? (
-            <section className={styles.categorySection}>
-              <h2 className={layout.sectionLabel}>カテゴリ別の支出(今月)</h2>
+            <section className="flex flex-col gap-2">
+              <h2 className="text-muted-foreground text-sm font-medium">カテゴリ別の支出(今月)</h2>
               <Card isFlush>
-                {categoryRows.map((row) => (
-                  <div key={row.categoryId ?? 'uncategorized'} className={styles.categoryRow}>
-                    <span className={styles.categoryName}>{row.name}</span>
-                    <span className={styles.categoryAmount}>{formatAmount(row.amount)}</span>
-                  </div>
-                ))}
+                <ul>
+                  {categoryRows.map((row) => (
+                    <li
+                      key={row.categoryId ?? 'uncategorized'}
+                      className="flex min-h-12 items-center gap-3 border-b px-4 py-2 last:border-b-0"
+                    >
+                      <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                      <span className="shrink-0 font-mono font-semibold tabular-nums">
+                        {formatAmount(row.amount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </Card>
             </section>
           ) : null}
         </>
       )}
-    </div>
+    </Page>
   );
 }

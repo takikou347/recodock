@@ -1,16 +1,20 @@
 import { CalendarDaysIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import type { CalendarEventRecord } from '@recodock/shared';
 import { formatFullDate, formatTime } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { Modal } from '../../components/Modal';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { useCancelOccurrence, useDeleteEvent, useEventReminders } from './useCalendarEntries';
-
-import styles from './EventDetailModal.module.css';
+import { Button } from '@/components/Button';
+import { Modal } from '@/components/Modal';
+import { useToast } from '@/components/Toast';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/core/auth';
+import {
+  useCancelOccurrence,
+  useDeleteEvent,
+  useEventReminders,
+} from '@/modules/calendar/useCalendarEntries';
 
 export interface EventDetailModalProps {
   isOpen: boolean;
@@ -30,6 +34,20 @@ function describeRrule(rrule: string | null): string | null {
   if (rrule.includes('FREQ=WEEKLY')) return '毎週';
   if (rrule.includes('FREQ=MONTHLY')) return '毎月';
   return '繰り返し';
+}
+
+interface DetailRowProps {
+  label: string;
+  children: ReactNode;
+}
+
+function DetailRow({ label, children }: DetailRowProps) {
+  return (
+    <div className="flex items-baseline gap-3 border-b pb-2.5 last:border-b-0 last:pb-0">
+      <dt className="text-muted-foreground w-20 shrink-0 text-sm">{label}</dt>
+      <dd className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">{children}</dd>
+    </div>
+  );
 }
 
 /**
@@ -97,48 +115,40 @@ export function EventDetailModal({
         </>
       }
     >
-      <div className={styles.rows}>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>日付</span>
-          <span className={[styles.rowValue, styles.mono].join(' ')}>
-            {formatFullDate(occurrence)}
-          </span>
-          {repeatLabel ? <span className={styles.repeatBadge}>{repeatLabel}</span> : null}
-        </div>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>時間</span>
-          <span className={[styles.rowValue, styles.mono].join(' ')}>
+      <dl className="flex flex-col gap-2.5">
+        <DetailRow label="日付">
+          <span className="font-mono tabular-nums">{formatFullDate(occurrence)}</span>
+          {repeatLabel ? <Badge variant="secondary">{repeatLabel}</Badge> : null}
+        </DetailRow>
+        <DetailRow label="時間">
+          <span className="font-mono tabular-nums">
             {event.isAllDay ? '終日' : `${formatTime(startsAt)} 〜 ${formatTime(endsAt)}`}
           </span>
-        </div>
+        </DetailRow>
         {event.location ? (
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>場所</span>
-            <span className={styles.rowValue}>{event.location}</span>
-          </div>
+          <DetailRow label="場所">
+            <span className="truncate">{event.location}</span>
+          </DetailRow>
         ) : null}
         {event.memo ? (
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>メモ</span>
-            <span className={styles.rowValue}>{event.memo}</span>
-          </div>
+          <DetailRow label="メモ">
+            {/* メモは省略せず折り返す。詳細画面で本文が読めないほうが困る */}
+            <span className="wrap-anywhere whitespace-pre-wrap">{event.memo}</span>
+          </DetailRow>
         ) : null}
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>リマインド</span>
-          <span className={styles.rowValue}>
-            {reminders.length > 0
-              ? reminders.map((minutes) => `${minutes}分前`).join(' / ')
-              : 'なし'}
-          </span>
-        </div>
-      </div>
+        <DetailRow label="リマインド">
+          {reminders.length > 0 ? reminders.map((minutes) => `${minutes}分前`).join(' / ') : 'なし'}
+        </DetailRow>
+      </dl>
 
       {isChoosingDelete ? (
-        <div className={styles.deleteChoice} role="group" aria-label="削除の範囲">
-          <span className={styles.deleteChoiceLabel}>
-            繰り返しの予定です。どの範囲を削除しますか？
-          </span>
-          <div className={styles.deleteChoiceButtons}>
+        <div
+          className="flex flex-col gap-2 rounded-lg border border-dashed p-3"
+          role="group"
+          aria-label="削除の範囲"
+        >
+          <span className="text-sm font-medium">繰り返しの予定です。どの範囲を削除しますか？</span>
+          <div className="flex flex-wrap gap-2">
             <Button variant="secondary" size="sm" onClick={() => void onDeleteOccurrence()}>
               この回のみ
             </Button>

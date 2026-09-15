@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
-import { Skeleton } from '../components/Skeleton';
 import { useAuth } from './auth';
 
-import styles from './RequireAuth.module.css';
+import { Skeleton } from '@/components/Skeleton';
 
 export interface RequireAuthProps {
   children: ReactNode;
@@ -19,8 +18,9 @@ export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation();
 
   if (isLoading) {
+    // セッション復元中のプレースホルダ。実コンテンツと同じ位置に置く
     return (
-      <div className={styles.loading}>
+      <div className="mx-auto w-full max-w-160 p-8">
         <Skeleton lineCount={3} hasBlock />
       </div>
     );

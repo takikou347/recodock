@@ -18,7 +18,13 @@ export interface Note {
 const EXCERPT_LENGTH = 60;
 
 function toNote(record: NoteRecord): Note {
-  const body = record.body.replace(/\n+/g, ' ').trim();
+  // 抜粋は素の文章として読ませたいので、行頭の Markdown 記法(見出し・箇条書き・チェックボックス)は落とす
+  const body = record.body
+    .split('\n')
+    .map((line) => line.replace(/^\s*(?:#+|[-*])\s+(?:\[[ xX]\]\s+)?/, ''))
+    .filter((line) => line.trim() !== '')
+    .join(' ')
+    .trim();
   return {
     id: record.id,
     title: record.title,

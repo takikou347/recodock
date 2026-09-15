@@ -22,8 +22,15 @@ export interface RecurrenceRule {
 
 const WEEKDAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
 
-/** 展開の暴走を防ぐ上限。UI が扱う範囲(数年分の月表示)には十分な値。 */
+/** 1 回の展開で返す件数の上限。UI が扱う範囲(1 か月〜1 年の表示)には十分な値。 */
 const MAX_OCCURRENCES = 1000;
+
+/**
+ * 候補の生成回数の上限。通常は limit(UNTIL または表示範囲の終わり)で先に止まるので、
+ * これは無限ループを防ぐためだけの値。表示範囲より前から続く予定を捨てないよう、
+ * 返す件数の上限とは別に大きく取る。
+ */
+const MAX_CANDIDATES = 200_000;
 
 /**
  * RFC 5545 の RRULE 文字列を解釈する。
@@ -89,6 +96,9 @@ function atStartOfDay(date: Date): Date {
  * 繰り返し予定を [rangeStart, rangeEnd] に含まれる開始日時へ展開する(CAL-03)。
  * rrule が null / 解釈できない場合は、範囲に入っていれば開始日時をそのまま 1 件返す。
  * 除外日(event_overrides の is_canceled)は exceptDates で渡す。
+ *
+ * 終了日は RRULE 内の UNTIL と、DB の events.rrule_until 列の両方を受け付ける
+ * (列は索引のために別に持っている)。両方あるときは早いほうで打ち切る。
  */
 export function expandOccurrences(
   startsAt: Date,
@@ -96,6 +106,7 @@ export function expandOccurrences(
   rangeStart: Date,
   rangeEnd: Date,
   exceptDates: readonly Date[] = [],
+  rruleUntil: string | Date | null = null,
 ): Date[] {
   const isExcluded = (date: Date) => exceptDates.some((except) => isSameDay(except, date));
 
@@ -110,25 +121,42 @@ export function expandOccurrences(
     return single ? [startsAt] : [];
   }
 
-  const limit = rule.until && rule.until < rangeEnd ? rule.until : rangeEnd;
+  const until = earliest(rule.until, toDate(rruleUntil));
+  const limit = until && until < rangeEnd ? until : rangeEnd;
   const occurrences: Date[] = [];
+  // COUNT は DTSTART からの通算回数なので、表示範囲の外でも数える必要がある
   let generated = 0;
 
-  for (const candidate of generate(startsAt, rule)) {
-    if (candidate > limit) break;
+  for (const candidate of generate(startsAt, rule, limit)) {
     generated += 1;
     if (rule.count !== undefined && generated > rule.count) break;
-    if (generated > MAX_OCCURRENCES) break;
     if (candidate < rangeStart) continue;
     if (isExcluded(candidate)) continue;
     occurrences.push(candidate);
+    if (occurrences.length >= MAX_OCCURRENCES) break;
   }
 
   return occurrences;
 }
 
-/** 開始日時から規則に沿って候補を昇順に生み出す。 */
-function* generate(startsAt: Date, rule: RecurrenceRule): Generator<Date> {
+function toDate(value: string | Date | null): Date | undefined {
+  if (value === null) return undefined;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function earliest(a: Date | undefined, b: Date | undefined): Date | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return a < b ? a : b;
+}
+
+/**
+ * 開始日時から規則に沿って候補を昇順に生み出す。
+ * limit を過ぎたら止める。表示範囲より前の候補も昇順に出すので、
+ * 呼び出し側が範囲外を読み飛ばしても後続の候補は失われない。
+ */
+function* generate(startsAt: Date, rule: RecurrenceRule, limit: Date): Generator<Date> {
   const timeOfDay = {
     hours: startsAt.getHours(),
     minutes: startsAt.getMinutes(),
@@ -146,10 +174,12 @@ function* generate(startsAt: Date, rule: RecurrenceRule): Generator<Date> {
 
   if (rule.freq === 'DAILY') {
     const cursor = atStartOfDay(startsAt);
-    for (let i = 0; i < MAX_OCCURRENCES; i += 1) {
-      yield withTime(
+    for (let i = 0; i < MAX_CANDIDATES; i += 1) {
+      const date = withTime(
         new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + i * rule.interval),
       );
+      if (date > limit) return;
+      yield date;
     }
     return;
   }
@@ -160,7 +190,7 @@ function* generate(startsAt: Date, rule: RecurrenceRule): Generator<Date> {
     // 開始日を含む週の日曜
     const weekStart = atStartOfDay(startsAt);
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    for (let week = 0; week < MAX_OCCURRENCES; week += 1) {
+    for (let week = 0; week < MAX_CANDIDATES; week += 1) {
       for (const weekday of weekdays) {
         const date = new Date(
           weekStart.getFullYear(),
@@ -168,7 +198,9 @@ function* generate(startsAt: Date, rule: RecurrenceRule): Generator<Date> {
           weekStart.getDate() + week * rule.interval * 7 + weekday,
         );
         if (date < atStartOfDay(startsAt)) continue;
-        yield withTime(date);
+        const occurrence = withTime(date);
+        if (occurrence > limit) return;
+        yield occurrence;
       }
     }
     return;
@@ -176,10 +208,13 @@ function* generate(startsAt: Date, rule: RecurrenceRule): Generator<Date> {
 
   // MONTHLY: 開始日と同じ日。存在しない月(31日など)はその月を飛ばす
   const day = startsAt.getDate();
-  for (let i = 0; i < MAX_OCCURRENCES; i += 1) {
+  for (let i = 0; i < MAX_CANDIDATES; i += 1) {
     const base = new Date(startsAt.getFullYear(), startsAt.getMonth() + i * rule.interval, 1);
+    if (base > limit) return;
     const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
     if (day > daysInMonth) continue;
-    yield withTime(new Date(base.getFullYear(), base.getMonth(), day));
+    const occurrence = withTime(new Date(base.getFullYear(), base.getMonth(), day));
+    if (occurrence > limit) return;
+    yield occurrence;
   }
 }
