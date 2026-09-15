@@ -147,6 +147,8 @@ export function useCalendarMonth(month: Date): CalendarMonthResult {
       rangeStart,
       rangeEnd,
       canceledByEvent.get(event.id) ?? [],
+      // 終了日(rrule_until)を渡さないと、終わったはずの繰り返しが永久に出続ける
+      event.rruleUntil,
     )) {
       ensure(toDateKey(occurrence)).events.push({
         id: `${event.id}-${occurrence.toISOString()}`,

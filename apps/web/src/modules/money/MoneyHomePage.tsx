@@ -1,30 +1,48 @@
-import { PlusIcon, WalletIcon } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DownloadIcon,
+  PlusIcon,
+  WalletIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { formatYearMonth } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { Chip } from '../../components/Chip';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { Icon } from '../../components/icons/Icon';
-import { Skeleton } from '../../components/Skeleton';
-import { useToast } from '../../components/Toast';
-import { shiftMonth } from '../../lib/calendarGrid';
-import { moduleThemeClass } from '../../lib/moduleTheme';
-import { TransactionCreateModal } from './TransactionCreateModal';
-import type { Transaction, TransactionFilters } from './useMoneySummary';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Chip } from '@/components/Chip';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { Select } from '@/components/Select';
+import { Skeleton } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
+import { Button as UiButton } from '@/components/ui/button';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { shiftMonth } from '@/lib/calendarGrid';
+import { toMonthKey } from '@/lib/monthRange';
+import { cn } from '@/lib/utils';
+import { TransactionCreateModal } from '@/modules/money/TransactionCreateModal';
+import { buildTransactionsCsv, downloadCsv } from '@/modules/money/transactionsCsv';
+import type { Transaction, TransactionFilters } from '@/modules/money/useMoneySummary';
 import {
-  buildDonutGradient,
   useMoneyAccounts,
   useMoneyCategories,
   useMoneySummary,
-} from './useMoneySummary';
+} from '@/modules/money/useMoneySummary';
 
-import layout from '../../core/pageLayout.module.css';
-import styles from './MoneyHomePage.module.css';
+/**
+ * カテゴリの識別は色相ではなく前景色の濃淡で行う(モジュール色の流用をやめた。ADR-0008)。
+ * 不透明度で作るため、ライト・ダークどちらでも地に対するコントラストが保たれる。
+ */
+const CATEGORY_SHADES = [
+  'bg-foreground',
+  'bg-foreground/75',
+  'bg-foreground/55',
+  'bg-foreground/40',
+  'bg-foreground/28',
+  'bg-foreground/18',
+] as const;
 
 /**
  * MON-20 家計簿ホーム(月次サマリ) ＋ MON-21 取引一覧。
@@ -55,123 +73,177 @@ export function MoneyHomePage() {
     refetch,
   } = useMoneySummary(month, filters);
 
-  const donutStyle: CSSProperties = {
-    '--donut-gradient': buildDonutGradient(categories),
-  } as CSSProperties;
+  // 全月ゼロのときに高さ 0 の棒だけが残らないよう、描くものがあるかを先に見る
+  const hasTrend = trend.some((bar) => bar.incomeRatio > 0 || bar.expenseRatio > 0);
+  const isFiltered =
+    filters.kind !== 'all' || filters.accountId !== 'all' || filters.categoryId !== 'all';
+
+  const onExportCsv = () => {
+    downloadCsv(`家計簿_${toMonthKey(month)}.csv`, buildTransactionsCsv(transactions));
+    showToast({ message: `CSV を書き出しました(${transactions.length} 件)` });
+  };
 
   return (
-    <div className={[layout.page, moduleThemeClass('money')].join(' ')}>
-      <div className={layout.header}>
-        <h1 className={layout.title}>家計簿 ／ {formatYearMonth(month)}</h1>
-        <div className={layout.monthNav}>
-          <button
-            type="button"
-            className={layout.monthNavButton}
-            aria-label="前の月"
-            onClick={() => setMonth((current) => shiftMonth(current, -1))}
-          >
-            <Icon name="chevronLeft" size={14} />
-          </button>
-          <button
-            type="button"
-            className={layout.monthNavButton}
-            aria-label="次の月"
-            onClick={() => setMonth((current) => shiftMonth(current, 1))}
-          >
-            <Icon name="chevronRight" size={14} />
-          </button>
-        </div>
-        <div className={layout.actions}>
-          <Button
-            variant="secondary"
-            onClick={() => showToast({ message: 'CSV を書き出しました' })}
-          >
-            CSV 出力
-          </Button>
-          <Button variant="primary" icon={PlusIcon} onClick={() => setIsCreateOpen(true)}>
-            取引を追加
-          </Button>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title={`家計簿 ／ ${formatYearMonth(month)}`}
+        actions={
+          <>
+            <div className="flex items-center gap-1">
+              <UiButton
+                variant="outline"
+                size="icon-sm"
+                aria-label="前の月"
+                onClick={() => setMonth((current) => shiftMonth(current, -1))}
+              >
+                <ChevronLeftIcon />
+              </UiButton>
+              <UiButton
+                variant="outline"
+                size="icon-sm"
+                aria-label="次の月"
+                onClick={() => setMonth((current) => shiftMonth(current, 1))}
+              >
+                <ChevronRightIcon />
+              </UiButton>
+            </div>
+            <Button
+              variant="secondary"
+              icon={DownloadIcon}
+              disabled={transactions.length === 0}
+              onClick={onExportCsv}
+            >
+              CSV 出力
+            </Button>
+            <Button variant="primary" icon={PlusIcon} onClick={() => setIsCreateOpen(true)}>
+              取引を追加
+            </Button>
+          </>
+        }
+      />
 
-      <div className={styles.stats}>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.id}>
-            <p className={styles.statLabel}>{stat.label}</p>
-            <p className={styles.statValue}>{stat.value}</p>
-            <p className={styles.statSub}>{stat.sub}</p>
+            <p className="text-muted-foreground text-sm font-medium">{stat.label}</p>
+            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{stat.value}</p>
+            <p className="text-muted-foreground mt-1 truncate text-sm">{stat.sub}</p>
           </Card>
         ))}
       </div>
 
-      <div className={styles.columns}>
-        <div className={styles.sideColumn}>
-          <Card>
-            <h2 className={styles.cardTitle}>カテゴリ別支出</h2>
-            <div className={styles.donutWrap}>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <Card className="h-fit">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="font-heading text-base font-semibold">カテゴリ別支出</h2>
+            {/* 単位は見出しに一度だけ置き、行は数字だけを等幅で並べて桁を比べやすくする */}
+            <span className="text-muted-foreground shrink-0 font-mono text-xs tabular-nums">
+              支出計 {expenseTotal} 円
+            </span>
+          </div>
+          {categories.length === 0 ? (
+            <p className="text-muted-foreground mt-4 text-sm">この月の支出はまだありません</p>
+          ) : (
+            <>
               <div
-                className={styles.donut}
-                style={donutStyle}
+                className="bg-muted mt-4 flex h-2.5 overflow-hidden rounded-full"
                 role="img"
                 aria-label="カテゴリ別支出の構成比"
               >
-                <div className={styles.donutHole}>
-                  <span className={styles.donutLabel}>支出計</span>
-                  <span className={styles.donutValue}>{expenseTotal}</span>
-                </div>
+                {categories.map((category, index) => (
+                  <div
+                    key={category.id}
+                    className={cn('h-full', CATEGORY_SHADES[index % CATEGORY_SHADES.length])}
+                    style={{ width: `${category.percentage}%` }}
+                  />
+                ))}
               </div>
-            </div>
-            <div className={styles.legend}>
-              {categories.map((category) => {
-                const rowStyle: CSSProperties = {
-                  '--swatch-color': category.colorVar,
-                  '--fill-width': `${category.percentage}%`,
-                } as CSSProperties;
-                return (
-                  <div key={category.id} className={styles.legendRow} style={rowStyle}>
-                    <span className={styles.legendSwatch} />
-                    <span className={styles.legendName}>{category.name}</span>
-                    <span className={styles.legendBar}>
-                      <span className={styles.legendFill} />
+              <ul className="mt-4 flex flex-col gap-2.5">
+                {categories.map((category, index) => (
+                  <li key={category.id} className="flex items-center gap-2 text-sm">
+                    <span
+                      className={cn(
+                        'size-2.5 shrink-0 rounded-xs',
+                        CATEGORY_SHADES[index % CATEGORY_SHADES.length],
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0 flex-1 truncate">{category.name}</span>
+                    <span className="text-muted-foreground shrink-0 font-mono text-xs tabular-nums">
+                      {category.percentage}%
                     </span>
-                    <span className={styles.legendAmount}>{category.amount}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
+                    <span className="w-16 shrink-0 text-right font-mono text-xs tabular-nums">
+                      {category.amount}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Card>
 
-        <div className={styles.mainColumn}>
+        <div className="flex min-w-0 flex-col gap-4">
           <Card>
-            <div className={styles.trendHead}>
-              <h2 className={styles.cardTitle}>月推移(収入／支出)</h2>
-              <span className={styles.cardMeta}>直近6か月</span>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-heading text-base font-semibold">月推移(収入／支出)</h2>
+              <span className="text-muted-foreground shrink-0 text-xs">直近6か月</span>
             </div>
-            <div className={styles.trend}>
-              {trend.map((bar) => (
-                <div key={bar.label} className={styles.trendMonth}>
-                  <div className={styles.trendBars}>
-                    <span
-                      className={[styles.trendBar, styles.trendIncome].join(' ')}
-                      style={{ '--bar-height': `${bar.incomeRatio}%` } as CSSProperties}
-                      title={`${bar.label} 収入`}
-                    />
-                    <span
-                      className={[styles.trendBar, styles.trendExpense].join(' ')}
-                      style={{ '--bar-height': `${bar.expenseRatio}%` } as CSSProperties}
-                      title={`${bar.label} 支出`}
-                    />
-                  </div>
-                  <span className={styles.trendLabel}>{bar.label}</span>
+            {hasTrend ? (
+              <>
+                <div
+                  className="mt-4 flex h-36 items-end gap-2 border-b pb-1.5"
+                  role="img"
+                  aria-label="直近6か月の収入と支出の推移"
+                >
+                  {trend.map((bar) => (
+                    <div
+                      key={bar.label}
+                      className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
+                    >
+                      <div className="flex h-full w-full items-end justify-center gap-1">
+                        {bar.incomeRatio > 0 ? (
+                          <div
+                            className="min-h-0.5 w-3 rounded-t-sm bg-emerald-600 sm:w-4 dark:bg-emerald-500"
+                            style={{ height: `${bar.incomeRatio}%` }}
+                          />
+                        ) : null}
+                        {bar.expenseRatio > 0 ? (
+                          <div
+                            className="bg-foreground/70 min-h-0.5 w-3 rounded-t-sm sm:w-4"
+                            style={{ height: `${bar.expenseRatio}%` }}
+                          />
+                        ) : null}
+                      </div>
+                      <span className="text-muted-foreground text-xs tabular-nums">
+                        {bar.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="text-muted-foreground mt-2 flex items-center gap-4 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="size-2.5 rounded-xs bg-emerald-600 dark:bg-emerald-500"
+                      aria-hidden="true"
+                    />
+                    収入
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="bg-foreground/70 size-2.5 rounded-xs" aria-hidden="true" />
+                    支出
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground mt-4 text-sm">
+                直近6か月に記録された収支がありません
+              </p>
+            )}
           </Card>
 
-          <Card isFlush className={styles.txnCard}>
-            <div className={styles.txnHead}>
-              <h2 className={styles.cardTitle}>取引一覧</h2>
+          <Card isFlush>
+            <div className="flex flex-wrap items-center gap-2 border-b p-3 sm:px-4">
+              <h2 className="font-heading mr-1 text-base font-semibold">取引一覧</h2>
               <Chip
                 isSelected={filters.kind === 'all'}
                 size="sm"
@@ -194,24 +266,28 @@ export function MoneyHomePage() {
                 振替
               </Chip>
               <TransactionFilterSelects filters={filters} onChange={setFilters} />
-              <span className={styles.txnCount}>{totalCount.toLocaleString('ja-JP')} 件</span>
+              <span className="text-muted-foreground ml-auto text-sm tabular-nums">
+                {isFiltered
+                  ? `${transactions.length.toLocaleString('ja-JP')} / ${totalCount.toLocaleString('ja-JP')} 件`
+                  : `${totalCount.toLocaleString('ja-JP')} 件`}
+              </span>
             </div>
 
-            <div className={styles.txnBody}>
-              {isError ? (
-                <div className={styles.states}>
-                  <ErrorState
-                    title="取引を読み込めませんでした"
-                    description="記録は端末に保存済み。接続を確認してください。"
-                    onRetry={refetch}
-                  />
-                </div>
-              ) : isLoading ? (
-                <div className={styles.states}>
-                  <Skeleton lineCount={4} hasBlock />
-                </div>
-              ) : transactions.length === 0 ? (
-                <div className={styles.states}>
+            {isError ? (
+              <div className="p-4">
+                <ErrorState
+                  title="取引を読み込めませんでした"
+                  description="通信を確認してもう一度お試しください。"
+                  onRetry={refetch}
+                />
+              </div>
+            ) : isLoading ? (
+              <div className="p-4">
+                <Skeleton lineCount={4} hasBlock />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="p-4">
+                {totalCount === 0 ? (
                   <EmptyState
                     icon={WalletIcon}
                     title="まだ取引がありません"
@@ -227,47 +303,60 @@ export function MoneyHomePage() {
                       </Button>
                     }
                   />
-                </div>
-              ) : (
-                <>
-                  {transactions.map((transaction) => {
-                    const toneStyle: CSSProperties = {
-                      '--tone-bg': `var(--color-${transaction.tone}-bg)`,
-                      '--tone-fg': `var(--color-${transaction.tone}-fg)`,
-                    } as CSSProperties;
-                    return (
-                      <button
-                        key={transaction.id}
-                        type="button"
-                        className={styles.txnRow}
-                        style={toneStyle}
-                        onClick={() => setEditTarget(transaction)}
+                ) : (
+                  <EmptyState
+                    icon={WalletIcon}
+                    title="条件に合う取引がありません"
+                    description="絞り込みを変えるか、解除してください"
+                    action={
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setFilters({ kind: 'all', accountId: 'all', categoryId: 'all' })
+                        }
                       >
-                        <span className={styles.txnDate}>{transaction.date}</span>
-                        <span className={styles.txnCategory}>{transaction.category}</span>
-                        <span className={styles.txnMemo}>{transaction.memo}</span>
-                        <span className={styles.txnAccount}>{transaction.account}</span>
-                        <span
-                          className={[
-                            styles.txnAmount,
-                            transaction.isIncome ? styles.txnAmountIncome : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                        >
-                          {transaction.amount}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  <div className={styles.txnFooter}>
-                    <Button variant="text" size="sm">
-                      さらに表示
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+                        絞り込みを解除
+                      </Button>
+                    }
+                  />
+                )}
+              </div>
+            ) : (
+              <ul>
+                {transactions.map((transaction) => (
+                  <li key={transaction.id} className="border-b last:border-b-0">
+                    <button
+                      type="button"
+                      className="hover:bg-muted/50 focus-visible:ring-ring/50 grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-2.5 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none sm:grid-cols-[3rem_auto_minmax(0,1fr)_8rem_7rem] sm:px-4"
+                      onClick={() => setEditTarget(transaction)}
+                    >
+                      <span className="text-muted-foreground hidden font-mono text-xs tabular-nums sm:inline">
+                        {transaction.date}
+                      </span>
+                      <span className="bg-muted text-muted-foreground max-w-28 truncate rounded-md px-2 py-0.5 text-xs">
+                        {transaction.category}
+                      </span>
+                      <span className="truncate text-sm font-medium">
+                        {transaction.memo || '—'}
+                      </span>
+                      <span className="text-muted-foreground hidden truncate text-xs sm:inline">
+                        {transaction.account}
+                      </span>
+                      <span
+                        className={cn(
+                          'text-right font-mono text-sm font-semibold tabular-nums',
+                          // 金額の符号は情報なので、収入にだけ色を足す(それ以外は色を持たない)
+                          transaction.isIncome && 'text-emerald-600 dark:text-emerald-400',
+                        )}
+                      >
+                        {transaction.amount}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
       </div>
@@ -278,7 +367,7 @@ export function MoneyHomePage() {
         transaction={editTarget?.raw}
         onClose={() => setEditTarget(undefined)}
       />
-    </div>
+    </Page>
   );
 }
 
@@ -287,40 +376,32 @@ interface TransactionFilterSelectsProps {
   onChange: (update: (current: TransactionFilters) => TransactionFilters) => void;
 }
 
-/** MON-21 の口座・カテゴリ絞り込み。 */
+/** MON-21 の口座・カテゴリ絞り込み。アプリ内で唯一のネイティブ select だった(監査 H-18)。 */
 function TransactionFilterSelects({ filters, onChange }: TransactionFilterSelectsProps) {
   const { accounts } = useMoneyAccounts();
   const { categories } = useMoneyCategories();
   return (
-    <span className={styles.filterSelects}>
-      <select
-        className={styles.filterSelect}
-        aria-label="口座で絞り込み"
+    <>
+      <Select
+        ariaLabel="口座で絞り込み"
+        className="h-7"
         value={filters.accountId}
-        onChange={(event) => onChange((current) => ({ ...current, accountId: event.target.value }))}
-      >
-        <option value="all">口座: すべて</option>
-        {accounts.map((account) => (
-          <option key={account.id} value={account.id}>
-            {account.name}
-          </option>
-        ))}
-      </select>
-      <select
-        className={styles.filterSelect}
-        aria-label="カテゴリで絞り込み"
+        options={[
+          { value: 'all', label: '口座: すべて' },
+          ...accounts.map((account) => ({ value: account.id, label: account.name })),
+        ]}
+        onChange={(accountId) => onChange((current) => ({ ...current, accountId }))}
+      />
+      <Select
+        ariaLabel="カテゴリで絞り込み"
+        className="h-7"
         value={filters.categoryId}
-        onChange={(event) =>
-          onChange((current) => ({ ...current, categoryId: event.target.value }))
-        }
-      >
-        <option value="all">カテゴリ: すべて</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-      </select>
-    </span>
+        options={[
+          { value: 'all', label: 'カテゴリ: すべて' },
+          ...categories.map((category) => ({ value: category.id, label: category.name })),
+        ]}
+        onChange={(categoryId) => onChange((current) => ({ ...current, categoryId }))}
+      />
+    </>
   );
 }

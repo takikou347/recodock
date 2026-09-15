@@ -55,23 +55,49 @@ describe('calcAccountBalance(MON-02, MON-05)', () => {
     expect(calcAccountBalance('cash', 2000, transactions)).toBe(12000);
     expect(calcAccountBalance('emoney', 500, transactions)).toBe(500);
   });
+
+  it('取引が無ければ開始残高のまま', () => {
+    expect(calcAccountBalance('bank', 1000, [])).toBe(1000);
+  });
+
+  it('同じ口座への振替は増減しない', () => {
+    const transactions = [
+      tx({ kind: 'transfer', amount: 10000, accountId: 'bank', transferAccountId: 'bank' }),
+    ];
+    expect(calcAccountBalance('bank', 50000, transactions)).toBe(50000);
+  });
+
+  it('入金先が欠けた振替は出金側だけ減る', () => {
+    const transactions = [
+      tx({ kind: 'transfer', amount: 10000, accountId: 'bank', transferAccountId: null }),
+    ];
+    expect(calcAccountBalance('bank', 50000, transactions)).toBe(40000);
+  });
 });
 
 describe('summarizeByCategory(MON-04)', () => {
+  // カテゴリ未設定の支出を混ぜておかないと、除外条件のうち kind だけが効いていても通ってしまう
+  const transactions = [
+    tx({ kind: 'expense', amount: 1200, categoryId: 'food' }),
+    tx({ kind: 'expense', amount: 800, categoryId: 'food' }),
+    tx({ kind: 'expense', amount: 3000, categoryId: 'hobby' }),
+    tx({ kind: 'expense', amount: 900, categoryId: null }),
+    tx({ kind: 'income', amount: 280000, categoryId: 'salary' }),
+    tx({ kind: 'transfer', amount: 5000, transferAccountId: 'cash' }),
+  ];
+
   it('カテゴリ別に支出を合算し、振替・カテゴリなしは除外する', () => {
-    const result = summarizeByCategory(
-      [
-        tx({ kind: 'expense', amount: 1200, categoryId: 'food' }),
-        tx({ kind: 'expense', amount: 800, categoryId: 'food' }),
-        tx({ kind: 'expense', amount: 3000, categoryId: 'hobby' }),
-        tx({ kind: 'income', amount: 100, categoryId: 'salary' }),
-        tx({ kind: 'transfer', amount: 5000, transferAccountId: 'cash' }),
-      ],
-      'expense',
-    );
+    const result = summarizeByCategory(transactions, 'expense');
     expect(result.get('food')).toBe(2000);
     expect(result.get('hobby')).toBe(3000);
     expect(result.has('salary')).toBe(false);
     expect(result.size).toBe(2);
+  });
+
+  it('income を指定すると収入だけを集計する', () => {
+    const result = summarizeByCategory(transactions, 'income');
+    expect(result.get('salary')).toBe(280000);
+    expect(result.has('food')).toBe(false);
+    expect(result.size).toBe(1);
   });
 });

@@ -3,24 +3,22 @@ import { useEffect, useRef, useState } from 'react';
 
 import { AppError, type TransactionRecord } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { DatePicker } from '../../components/DatePicker';
-import { Modal } from '../../components/Modal';
-import { SegmentedControl } from '../../components/SegmentedControl';
-import { Select } from '../../components/Select';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { toDateKey } from '../../lib/monthRange';
+import { Button } from '@/components/Button';
+import { DatePicker } from '@/components/DatePicker';
+import { Modal } from '@/components/Modal';
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { Select } from '@/components/Select';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { useAuth } from '@/core/auth';
+import { toDateKey } from '@/lib/monthRange';
 import {
   useCreateTransaction,
   useDeleteTransaction,
   useMoneyAccounts,
   useMoneyCategories,
   useUpdateTransaction,
-} from './useMoneySummary';
-
-import styles from './TransactionCreateModal.module.css';
+} from '@/modules/money/useMoneySummary';
 
 type TransactionKindValue = 'expense' | 'income' | 'transfer';
 
@@ -152,7 +150,8 @@ export function TransactionCreateModal({
         <>
           {transaction ? (
             <Button
-              variant="text"
+              variant="danger"
+              className="mr-auto"
               onClick={() => void onDelete()}
               disabled={deleteTransaction.isPending}
             >
@@ -172,14 +171,12 @@ export function TransactionCreateModal({
         </>
       }
     >
-      <div className={styles.kindRow}>
-        <SegmentedControl
-          options={KIND_OPTIONS}
-          value={kind}
-          onChange={setKind}
-          ariaLabel="取引の種別"
-        />
-      </div>
+      <SegmentedControl
+        options={KIND_OPTIONS}
+        value={kind}
+        onChange={setKind}
+        ariaLabel="取引の種別"
+      />
 
       <TextField
         label="金額"
@@ -193,48 +190,55 @@ export function TransactionCreateModal({
         onChange={(event) => setAmount(event.target.value)}
       />
 
-      <div className={styles.pairRow}>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>日付</span>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">日付</span>
           <DatePicker value={occurredOn} onChange={setOccurredOn} ariaLabel="取引の日付" />
         </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>{kind === 'transfer' ? '出金元' : '口座'}</span>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">{kind === 'transfer' ? '出金元' : '口座'}</span>
           {accountOptions.length > 0 ? (
             <Select
               options={accountOptions}
               value={selectedAccount}
               onChange={setAccountId}
               ariaLabel="口座"
+              className="w-full"
             />
           ) : (
-            <p className={styles.empty}>口座が未登録です</p>
+            <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-sm">
+              口座が未登録です
+            </p>
           )}
         </div>
       </div>
 
       {kind === 'transfer' ? (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>入金先</span>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">入金先</span>
           <Select
             options={accountOptions.filter((option) => option.value !== selectedAccount)}
             value={selectedTransferAccount}
             onChange={setTransferAccountId}
             ariaLabel="振替先の口座"
+            className="w-full"
           />
         </div>
       ) : (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>カテゴリ</span>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">カテゴリ</span>
           {categoryOptions.length > 0 ? (
             <Select
               options={categoryOptions}
               value={selectedCategory}
               onChange={setCategoryId}
               ariaLabel="カテゴリ"
+              className="w-full"
             />
           ) : (
-            <p className={styles.empty}>カテゴリが未登録です</p>
+            <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-sm">
+              カテゴリが未登録です
+            </p>
           )}
         </div>
       )}

@@ -1,13 +1,7 @@
-/* 移行期間中のみ: 旧デザイン(Claude Design 由来の CSS Modules)を最下位レイヤーに隔離する。
- * これがないと global.css の要素セレクタ(button{} 等)が Tailwind のユーティリティを打ち消す。
- * 全画面の shadcn/ui 移行が終わったら legacy レイヤーごと削除する(ADR-0008)。 */
-@layer legacy;
-
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
-@import './styles/global.css' layer(legacy);
 
 @custom-variant dark (&:is(.dark *));
 
@@ -133,5 +127,21 @@
   }
   html {
     @apply font-sans;
+  }
+  /* シェルが高さいっぱいに広がれるようにする(サイドバーと本文の独立スクロール) */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

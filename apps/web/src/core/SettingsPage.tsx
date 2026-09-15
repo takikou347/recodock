@@ -3,15 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UserSettingKey } from '@recodock/shared';
 import { userSettingsRepo } from '@recodock/shared';
 
-import { Card } from '../components/Card';
-import { ErrorState } from '../components/ErrorState';
-import { Skeleton } from '../components/Skeleton';
-import { Toggle } from '../components/Toggle';
-import { supabase } from '../lib/supabase';
 import { useAuth } from './auth';
 
-import layout from './pageLayout.module.css';
-import styles from './SettingsPage.module.css';
+import { ErrorState } from '@/components/ErrorState';
+import { Skeleton } from '@/components/Skeleton';
+import { Toggle } from '@/components/Toggle';
+import { Card } from '@/components/ui/card';
+import { Page, PageHeader } from '@/core/PageLayout';
+import { supabase } from '@/lib/supabase';
 
 /**
  * 設定の既定値。未設定のキーはこの値で表示する。
@@ -25,8 +24,8 @@ const DEFAULT_FLAGS: Readonly<Partial<Record<UserSettingKey, boolean>>> = {
 const SETTINGS_QUERY_KEY = ['core', 'userSettings'] as const;
 
 /**
- * アプリ設定。デザインでは iOS の「その他」タブに項目が定義されているため、
- * 同じ項目を Web の設定画面として並べている。値は user_settings に保存する。
+ * アプリ設定。値は user_settings に保存する。
+ * データエクスポートは未実装のため項目を出さない(実装は Phase 8)。
  */
 export function SettingsPage() {
   const { user } = useAuth();
@@ -49,33 +48,33 @@ export function SettingsPage() {
   const isNotificationsOn = flags.notifications ?? true;
 
   return (
-    <div className={layout.page}>
-      <h1 className={layout.titleSm}>設定</h1>
+    <Page className="max-w-2xl">
+      <PageHeader title="設定" />
 
       {query.isError ? (
         <ErrorState
           title="設定を読み込めませんでした"
-          description="接続を確認してください。"
+          description="通信を確認してもう一度お試しください。"
           onRetry={() => void query.refetch()}
         />
       ) : query.isPending ? (
         <Skeleton lineCount={3} />
       ) : (
-        <Card isFlush>
-          <div className={styles.row}>
-            <span className={styles.label}>通知設定</span>
+        <Card className="gap-0 p-0">
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">通知</p>
+              <p className="text-muted-foreground text-xs">予定のリマインドを受け取る</p>
+            </div>
             <Toggle
               isOn={isNotificationsOn}
-              ariaLabel="通知設定"
+              ariaLabel="通知"
+              isDisabled={mutation.isPending}
               onChange={(value) => mutation.mutate({ key: 'notifications', value })}
             />
           </div>
-          <div className={styles.row}>
-            <span className={styles.label}>データエクスポート</span>
-            <span className={styles.meta}>ZIP</span>
-          </div>
         </Card>
       )}
-    </div>
+    </Page>
   );
 }

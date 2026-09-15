@@ -1,19 +1,18 @@
 import { PackageIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import type { ItemRecord } from '@recodock/shared';
 import { AppError } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { DatePicker } from '../../components/DatePicker';
-import { Modal } from '../../components/Modal';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { toDateKey } from '../../lib/monthRange';
-import { useSaveItem } from './useItems';
-
-import styles from './ItemEditModal.module.css';
+import { Button } from '@/components/Button';
+import { DatePicker } from '@/components/DatePicker';
+import { Modal } from '@/components/Modal';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/core/auth';
+import { toDateKey } from '@/lib/monthRange';
+import { useSaveItem } from '@/modules/items/useItems';
 
 export interface ItemEditModalProps {
   isOpen: boolean;
@@ -36,6 +35,8 @@ export function ItemEditModal({ isOpen, item, onClose }: ItemEditModalProps) {
   const [memo, setMemo] = useState('');
   const [errorText, setErrorText] = useState<string>();
   const loadedId = useRef<string | undefined>(undefined);
+  const purchasedOnLabelId = useId();
+  const warrantyLabelId = useId();
 
   // 編集対象が来たらフォームへ読み込む(開き直すたびに一度だけ)
   useEffect(() => {
@@ -109,42 +110,39 @@ export function ItemEditModal({ isOpen, item, onClose }: ItemEditModalProps) {
       <TextField
         label="名称"
         value={name}
-        placeholder="加湿器"
         errorText={errorText}
         onChange={(event) => setName(event.target.value)}
       />
-      <div className={styles.pairRow}>
-        <div className={styles.field}>
-          <TextField
-            label="カテゴリ"
-            value={category}
-            placeholder="家電"
-            onChange={(event) => setCategory(event.target.value)}
-          />
-        </div>
-        <div className={styles.field}>
-          <TextField
-            label="価格"
-            type="number"
-            inputMode="numeric"
-            isNumeric
-            value={priceText}
-            placeholder="12000"
-            onChange={(event) => setPriceText(event.target.value)}
-          />
-        </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="カテゴリ"
+          value={category}
+          placeholder="例: 家電"
+          onChange={(event) => setCategory(event.target.value)}
+        />
+        <TextField
+          label="価格"
+          type="number"
+          inputMode="numeric"
+          isNumeric
+          value={priceText}
+          onChange={(event) => setPriceText(event.target.value)}
+        />
       </div>
-      <div className={styles.pairRow}>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>購入日</span>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* DatePicker は id を受け取らないので、ラベルは group に aria-labelledby で結びつける(監査 H-12) */}
+        <div className="grid gap-2" role="group" aria-labelledby={purchasedOnLabelId}>
+          <Label id={purchasedOnLabelId}>購入日</Label>
           <DatePicker
             value={purchasedOn ?? new Date()}
             onChange={setPurchasedOn}
             ariaLabel="購入日"
           />
         </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>保証期限</span>
+        <div className="grid gap-2" role="group" aria-labelledby={warrantyLabelId}>
+          <Label id={warrantyLabelId}>保証期限</Label>
           <DatePicker
             value={warrantyExpiresOn ?? new Date()}
             onChange={setWarrantyExpiresOn}
@@ -152,10 +150,11 @@ export function ItemEditModal({ isOpen, item, onClose }: ItemEditModalProps) {
           />
         </div>
       </div>
+
       <TextField
         label="保管場所"
         value={location}
-        placeholder="押入れ"
+        placeholder="例: 押入れ"
         onChange={(event) => setLocation(event.target.value)}
       />
       <TextField label="備考" value={memo} onChange={(event) => setMemo(event.target.value)} />

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import type { DiaryMood, DiaryRecord, UpsertDiaryInput } from '@recodock/shared';
 import {
@@ -7,10 +8,11 @@ import {
   formatHeadingDate,
   formatListDate,
   queryKeys,
+  spotsRepo,
   storageRepo,
 } from '@recodock/shared';
 
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 /** 本文のブロック(DIA-42。text / heading / list / image / embed)。 */
 export type DiaryBlock =
@@ -120,17 +122,41 @@ function isImageNotation(line: string): boolean {
 function splitTitle(body: string): { title: string; excerpt: string; rest: string } {
   const [first = '', ...rest] = body.split('\n');
   const title = first.replace(/^#+\s*/, '').trim() || '(無題)';
+  // 抜粋は素の文章として読ませたいので、見出しの # と箇条書きの - は落とす
   const excerpt =
     rest
       .filter((line) => !isImageNotation(line))
+      .map((line) => line.replace(/^\s*(#+|[-*])\s+/, ''))
       .join(' ')
       .trim() || title;
   return { title, excerpt, rest: rest.join('\n') };
 }
 
-function toSummary(record: DiaryRecord): DiarySummary {
+/**
+ * スポット名を id で引ける形で返す。
+ * 日記が持つのは spot_id だけなので、地名を出すにはスポット側を引く必要がある。
+ * キーは地図モジュールの一覧と同じにして、同じ取得結果を使い回す。
+ */
+function useSpotNames(): Readonly<Record<string, string>> {
+  const query = useQuery({
+    queryKey: queryKeys.map.spots('all'),
+    queryFn: () => spotsRepo.list(supabase),
+  });
+  return useMemo(
+    () => Object.fromEntries((query.data ?? []).map((spot) => [spot.id, spot.name])),
+    [query.data],
+  );
+}
+
+function toSummary(
+  record: DiaryRecord,
+  spotNames: Readonly<Record<string, string>> = {},
+): DiarySummary {
   const date = new Date(`${record.entryDate}T00:00:00`);
   const { title, excerpt, rest } = splitTitle(record.body);
+  // タイトル行は title として別管理するため、本文ブロックには含めない
+  // (含めると編集のたびに body 先頭へタイトルが重複していく)
+  const blocks = parseBlocks(rest);
   return {
     id: record.id,
     date: formatListDate(date),
@@ -139,11 +165,11 @@ function toSummary(record: DiaryRecord): DiarySummary {
     mood: moodLabel(record.mood),
     title,
     excerpt,
-    photoCount: 0,
-    placeTag: record.spotId ? '位置情報あり' : undefined,
-    // タイトル行は title として別管理するため、本文ブロックには含めない
-    // (含めると編集のたびに body 先頭へタイトルが重複していく)
-    blocks: parseBlocks(rest),
+    // 本文の画像ブロックがそのまま写真の枚数。DB を追加で引かずに実データで出せる
+    photoCount: blocks.filter((block) => block.kind === 'image').length,
+    // 地名が引けないうち(未取得・スポット削除済み)は、代わりの文言を出さず何も出さない
+    placeTag: record.spotId ? spotNames[record.spotId] : undefined,
+    blocks,
   };
 }
 
@@ -155,12 +181,13 @@ export interface DiariesResult {
 
 /** 日記一覧を返す(DIA-40)。keyword で本文を絞り込む。 */
 export function useDiaries(keyword: string): DiariesResult {
+  const spotNames = useSpotNames();
   const query = useQuery({
     queryKey: queryKeys.diary.list(keyword),
     queryFn: () => diariesRepo.list(supabase, keyword),
   });
   return {
-    diaries: (query.data ?? []).map(toSummary),
+    diaries: (query.data ?? []).map((record) => toSummary(record, spotNames)),
     isLoading: query.isPending,
     isError: query.isError,
   };
@@ -168,12 +195,13 @@ export function useDiaries(keyword: string): DiariesResult {
 
 /** 1 件の日記を返す(DIA-41 / DIA-42)。 */
 export function useDiary(diaryId: string | undefined): DiarySummary | undefined {
+  const spotNames = useSpotNames();
   const query = useQuery({
     queryKey: queryKeys.diary.detail(diaryId ?? ''),
     queryFn: () => diariesRepo.get(supabase, diaryId ?? ''),
     enabled: Boolean(diaryId),
   });
-  return query.data ? toSummary(query.data) : undefined;
+  return query.data ? toSummary(query.data, spotNames) : undefined;
 }
 
 /** 日記を保存する(DIA-42 の自動保存)。 */
@@ -205,6 +233,7 @@ export function useCreateDiary(userId: string | undefined) {
 
 /** 「1年前の今日」の日記(DIA-04)。 */
 export function useDiaryOneYearAgo(today: Date): DiarySummary | undefined {
+  const spotNames = useSpotNames();
   const target = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
   const dateKey = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(
     target.getDate(),
@@ -214,7 +243,7 @@ export function useDiaryOneYearAgo(today: Date): DiarySummary | undefined {
     queryFn: () => diariesRepo.listByDate(supabase, dateKey),
   });
   const first = query.data?.[0];
-  return first ? toSummary(first) : undefined;
+  return first ? toSummary(first, spotNames) : undefined;
 }
 
 /**

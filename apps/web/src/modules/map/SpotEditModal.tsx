@@ -1,20 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPinIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import type { SpotRecord, SpotStatus } from '@recodock/shared';
 import { AppError, spotsRepo } from '@recodock/shared';
 
-import { Button } from '../../components/Button';
-import { DatePicker } from '../../components/DatePicker';
-import { Modal } from '../../components/Modal';
-import { TextField } from '../../components/TextField';
-import { useToast } from '../../components/Toast';
-import { useAuth } from '../../core/auth';
-import { toDateKey } from '../../lib/monthRange';
-import { supabase } from '../../lib/supabase';
+import { Button } from '@/components/Button';
+import { DatePicker } from '@/components/DatePicker';
+import { Modal } from '@/components/Modal';
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/core/auth';
+import { toDateKey } from '@/lib/monthRange';
+import { supabase } from '@/lib/supabase';
 
-import styles from './SpotEditModal.module.css';
+const STATUS_OPTIONS = [
+  { value: 'visited', label: '訪問済み' },
+  { value: 'wishlist', label: '行きたい' },
+] as const satisfies readonly { value: SpotStatus; label: string }[];
 
 export interface SpotEditModalProps {
   isOpen: boolean;
@@ -34,11 +39,12 @@ export function SpotEditModal({ isOpen, spot, onClose }: SpotEditModalProps) {
   const [name, setName] = useState('');
   const [status, setStatus] = useState<SpotStatus>('visited');
   const [visitedOn, setVisitedOn] = useState<Date>(() => new Date());
-  const [latitudeText, setLatitudeText] = useState('35.0092');
-  const [longitudeText, setLongitudeText] = useState('135.7727');
+  const [latitudeText, setLatitudeText] = useState('');
+  const [longitudeText, setLongitudeText] = useState('');
   const [memo, setMemo] = useState('');
   const [errorText, setErrorText] = useState<string>();
   const loadedId = useRef<string | undefined>(undefined);
+  const visitedOnLabelId = useId();
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -73,8 +79,8 @@ export function SpotEditModal({ isOpen, spot, onClose }: SpotEditModalProps) {
     setName(spot?.name ?? '');
     setStatus(spot?.status ?? 'visited');
     setVisitedOn(spot?.visitedOn ? new Date(`${spot.visitedOn}T00:00:00`) : new Date());
-    setLatitudeText(spot ? String(spot.latitude) : '35.0092');
-    setLongitudeText(spot ? String(spot.longitude) : '135.7727');
+    setLatitudeText(spot ? String(spot.latitude) : '');
+    setLongitudeText(spot ? String(spot.longitude) : '');
     setMemo(spot?.memo ?? '');
     setErrorText(undefined);
   }, [isOpen, spot]);
@@ -84,13 +90,15 @@ export function SpotEditModal({ isOpen, spot, onClose }: SpotEditModalProps) {
       setErrorText('場所名を入力してください');
       return;
     }
-    const latitude = Number(latitudeText);
-    const longitude = Number(longitudeText);
-    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+    // 空のまま保存すると、本人が置いていない座標が「自分の記録」として残る。
+    // 地図タイル上での指定を入れるまでは数値入力を必須にする
+    const latitude = Number(latitudeText.trim());
+    const longitude = Number(longitudeText.trim());
+    if (latitudeText.trim() === '' || !Number.isFinite(latitude) || Math.abs(latitude) > 90) {
       setErrorText('緯度は -90〜90 の数で入力してください');
       return;
     }
-    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    if (longitudeText.trim() === '' || !Number.isFinite(longitude) || Math.abs(longitude) > 180) {
       setErrorText('経度は -180〜180 の数で入力してください');
       return;
     }
@@ -124,64 +132,42 @@ export function SpotEditModal({ isOpen, spot, onClose }: SpotEditModalProps) {
       <TextField
         label="場所名"
         value={name}
-        placeholder="鴨川 三条"
         errorText={errorText}
         onChange={(event) => setName(event.target.value)}
       />
 
-      <div className={styles.statusSwitch} role="radiogroup" aria-label="スポットの状態">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={status === 'visited'}
-          className={[styles.statusOption, status === 'visited' ? styles.statusSelected : '']
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => setStatus('visited')}
-        >
-          訪問済み
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={status === 'wishlist'}
-          className={[styles.statusOption, status === 'wishlist' ? styles.statusSelected : '']
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => setStatus('wishlist')}
-        >
-          行きたい
-        </button>
-      </div>
+      <SegmentedControl
+        options={STATUS_OPTIONS}
+        value={status}
+        onChange={setStatus}
+        ariaLabel="スポットの状態"
+      />
 
       {status === 'visited' ? (
-        <div>
-          <span className={styles.fieldLabel}>訪問日</span>
+        // DatePicker は id を受け取らないので、ラベルは group に aria-labelledby で結びつける(監査 H-12)
+        <div className="grid gap-2" role="group" aria-labelledby={visitedOnLabelId}>
+          <Label id={visitedOnLabelId}>訪問日</Label>
           <DatePicker value={visitedOn} onChange={setVisitedOn} ariaLabel="訪問日" />
         </div>
       ) : null}
 
-      <div className={styles.pairRow}>
-        <div className={styles.field}>
-          <TextField
-            label="緯度"
-            type="number"
-            inputMode="decimal"
-            isNumeric
-            value={latitudeText}
-            onChange={(event) => setLatitudeText(event.target.value)}
-          />
-        </div>
-        <div className={styles.field}>
-          <TextField
-            label="経度"
-            type="number"
-            inputMode="decimal"
-            isNumeric
-            value={longitudeText}
-            onChange={(event) => setLongitudeText(event.target.value)}
-          />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="緯度"
+          type="number"
+          inputMode="decimal"
+          isNumeric
+          value={latitudeText}
+          onChange={(event) => setLatitudeText(event.target.value)}
+        />
+        <TextField
+          label="経度"
+          type="number"
+          inputMode="decimal"
+          isNumeric
+          value={longitudeText}
+          onChange={(event) => setLongitudeText(event.target.value)}
+        />
       </div>
 
       <TextField label="メモ" value={memo} onChange={(event) => setMemo(event.target.value)} />

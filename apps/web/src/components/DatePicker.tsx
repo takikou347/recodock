@@ -14,10 +14,13 @@ export interface DatePickerProps {
   value: Date;
   onChange: (date: Date) => void;
   ariaLabel: string;
+  /** `<Label htmlFor>` と結びつけるための id(監査 H-12) */
+  id?: string;
+  className?: string;
 }
 
 /** 日付ピッカー。実体は Radix の Popover なので ESC・外側クリック・フォーカス復帰が付く。 */
-export function DatePicker({ value, onChange, ariaLabel }: DatePickerProps) {
+export function DatePicker({ value, onChange, ariaLabel, id, className }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(value.getFullYear(), value.getMonth(), 1),
@@ -28,7 +31,12 @@ export function DatePicker({ value, onChange, ariaLabel }: DatePickerProps) {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" aria-label={ariaLabel} className="justify-between font-normal">
+        <Button
+          id={id}
+          variant="outline"
+          aria-label={ariaLabel}
+          className={cn('justify-between font-normal', className)}
+        >
           {formatDateValue(value)}
           <CalendarDaysIcon className="text-muted-foreground" />
         </Button>

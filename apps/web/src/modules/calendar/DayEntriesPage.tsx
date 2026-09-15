@@ -1,24 +1,16 @@
-import { CalendarDaysIcon } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { CalendarDaysIcon, ChevronLeftIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import type { ModuleKey } from '@recodock/shared';
 import { formatHeadingDate } from '@recodock/shared';
 
-import { Card } from '../../components/Card';
-import { Chip } from '../../components/Chip';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { Icon } from '../../components/icons/Icon';
-import { Skeleton } from '../../components/Skeleton';
-import { useDayEntries } from './useCalendarEntries';
-
-import layout from '../../core/pageLayout.module.css';
-import styles from './DayEntriesPage.module.css';
-
-function toneStyle(moduleKey: ModuleKey): CSSProperties {
-  return { '--tone-solid': `var(--color-${moduleKey}-solid)` } as CSSProperties;
-}
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { Skeleton } from '@/components/Skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Page, PageHeader, PageToolbar } from '@/core/PageLayout';
+import { useDayEntries } from '@/modules/calendar/useCalendarEntries';
 
 /** URL の :date(YYYY-MM-DD)を Date にする。不正な値は今日として扱う。 */
 function parseDateParam(value: string | undefined): Date {
@@ -38,27 +30,30 @@ export function DayEntriesPage() {
   const { sections, isLoading, isError } = useDayEntries(date);
 
   return (
-    <div className={layout.page}>
-      <button type="button" className={styles.back} onClick={() => navigate('/')}>
-        <Icon name="chevronLeft" size={16} />
+    <Page>
+      <Button variant="ghost" size="sm" className="-ml-2 self-start" onClick={() => navigate('/')}>
+        <ChevronLeftIcon />
         {date.getMonth() + 1}月
-      </button>
+      </Button>
 
-      <div>
-        <h1 className={layout.title}>{formatHeadingDate(date)}</h1>
-        <div className={styles.summary}>
+      <PageHeader title={formatHeadingDate(date)} />
+
+      {sections.length > 0 ? (
+        <PageToolbar>
+          {/* 件数の内訳を見せるだけで絞り込みはしないので、押せる Chip ではなく Badge にする */}
           {sections.map((section) => (
-            <Chip key={section.moduleKey} isSelected size="sm" count={section.rows.length}>
+            <Badge key={section.moduleKey} variant="secondary">
               {section.label.split(' · ')[0]}
-            </Chip>
+              <span className="tabular-nums opacity-70">{section.rows.length}</span>
+            </Badge>
           ))}
-        </div>
-      </div>
+        </PageToolbar>
+      ) : null}
 
       {isError ? (
         <ErrorState
           title="記録を読み込めませんでした"
-          description="記録は端末に保存済み。接続を確認してください。"
+          description="通信を確認してもう一度お試しください。"
         />
       ) : isLoading ? (
         <Skeleton lineCount={4} hasBlock />
@@ -69,28 +64,21 @@ export function DayEntriesPage() {
           description="カレンダーの ＋ から予定や記録を追加できます"
         />
       ) : (
-        <div className={styles.sections}>
+        <div className="flex flex-col gap-4">
           {sections.map((section) => (
-            <section
-              key={section.moduleKey}
-              className={styles.section}
-              style={toneStyle(section.moduleKey)}
-            >
-              <div className={styles.sectionHead}>
-                <span className={styles.sectionDot} />
-                <h2 className={styles.sectionLabel}>{section.label}</h2>
-              </div>
+            <section key={section.moduleKey} className="flex flex-col gap-1.5">
+              <h2 className="text-muted-foreground px-1 text-xs font-medium">{section.label}</h2>
               {section.rows.map((row) => (
-                <Card key={row.id} isRow onClick={() => undefined}>
-                  <div className={styles.row}>
-                    <span className={styles.lead}>{row.lead}</span>
-                    <div className={styles.rowBody}>
-                      <p className={styles.rowTitle}>{row.title}</p>
-                      <p className={styles.rowSub}>{row.sub}</p>
-                    </div>
-                    <span className={styles.chevron}>
-                      <Icon name="chevronRight" size={14} />
+                // 行き先のある詳細画面がまだ無いので、押せる見た目にはしない(空振りのボタンを作らない)
+                <Card key={row.id} isRow>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground w-12 shrink-0 font-mono text-xs tabular-nums">
+                      {row.lead}
                     </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{row.title}</p>
+                      <p className="text-muted-foreground truncate text-xs">{row.sub}</p>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -98,6 +86,6 @@ export function DayEntriesPage() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

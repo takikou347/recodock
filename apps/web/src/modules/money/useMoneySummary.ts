@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import type { CreateTransactionInput, ModuleKey, TransactionRecord } from '@recodock/shared';
+import type { CreateTransactionInput, TransactionRecord } from '@recodock/shared';
 import {
   calcAccountBalance,
   formatAmount,
@@ -20,16 +20,12 @@ export interface MoneyStat {
   label: string;
   value: string;
   sub: string;
-  /** 面の色に使うトーン */
-  tone: ModuleKey;
 }
 
-/** カテゴリ別支出(ドーナツと内訳)。 */
+/** カテゴリ別支出(構成比の内訳)。 */
 export interface CategoryBreakdown {
   id: string;
   name: string;
-  /** 円グラフ・バーの色(CSS 変数名) */
-  colorVar: string;
   /** 構成比 0〜100 */
   percentage: number;
   amount: string;
@@ -47,7 +43,6 @@ export interface Transaction {
   id: string;
   date: string;
   category: string;
-  tone: ModuleKey;
   memo: string;
   account: string;
   amount: string;
@@ -64,25 +59,8 @@ export interface TransactionFilters {
   categoryId: string;
 }
 
-/** カテゴリ内訳に順番に当てる色(モジュールの淡色を流用する)。 */
-const CATEGORY_COLOR_VARS = [
-  'var(--color-diary-line)',
-  'var(--color-calendar-line)',
-  'var(--color-money-line)',
-  'var(--color-notes-line)',
-  'var(--color-items-line)',
-  'var(--color-map-line)',
-] as const;
-
-/** カテゴリバッジのトーンも同じ並びで割り当てる。 */
-const CATEGORY_TONES: readonly ModuleKey[] = [
-  'diary',
-  'calendar',
-  'money',
-  'notes',
-  'items',
-  'map',
-];
+/** 内訳に出すカテゴリの上限。これを超えると濃淡で区別できなくなる。 */
+const CATEGORY_BREAKDOWN_LIMIT = 6;
 
 export interface MoneySummaryResult {
   stats: readonly MoneyStat[];
@@ -157,11 +135,10 @@ export function useMoneySummary(month: Date, filters: TransactionFilters): Money
   const categories: CategoryBreakdown[] = [...byCategory]
     .map(([categoryId, amount]) => ({ categoryId: categoryId as string | null, amount }))
     .sort((a, b) => b.amount - a.amount)
-    .slice(0, CATEGORY_COLOR_VARS.length)
+    .slice(0, CATEGORY_BREAKDOWN_LIMIT)
     .map((entry, index) => ({
       id: entry.categoryId ?? `uncategorized-${index}`,
       name: (entry.categoryId && categoryNames.get(entry.categoryId)) || '未分類',
-      colorVar: CATEGORY_COLOR_VARS[index % CATEGORY_COLOR_VARS.length] ?? CATEGORY_COLOR_VARS[0],
       percentage: summary.expense > 0 ? Math.round((entry.amount / summary.expense) * 100) : 0,
       amount: entry.amount.toLocaleString('ja-JP'),
     }));
@@ -188,14 +165,13 @@ export function useMoneySummary(month: Date, filters: TransactionFilters): Money
     return true;
   });
 
-  const transactions: Transaction[] = filtered.map((tx, index) => ({
+  const transactions: Transaction[] = filtered.map((tx) => ({
     id: tx.id,
     date: formatListDate(new Date(`${tx.occurredOn}T00:00:00`)),
     category:
       tx.kind === 'transfer'
         ? '振替'
         : (tx.categoryId && categoryNames.get(tx.categoryId)) || '未分類',
-    tone: CATEGORY_TONES[index % CATEGORY_TONES.length] ?? 'money',
     memo: tx.memo ?? '',
     account: accountNames.get(tx.accountId) ?? '',
     amount: formatAmount(tx.kind === 'income' ? tx.amount : -tx.amount, {
@@ -216,28 +192,24 @@ export function useMoneySummary(month: Date, filters: TransactionFilters): Money
         label: '収入',
         value: formatAmount(summary.income),
         sub: `前月比 ${incomeDiff === 0 ? '±0' : formatAmount(incomeDiff, { showsPlusSign: true })}`,
-        tone: 'money',
       },
       {
         id: 'expense',
         label: '支出',
         value: formatAmount(summary.expense),
         sub: `前月比 ${expenseDiff === 0 ? '±0' : formatAmount(expenseDiff, { showsPlusSign: true })}`,
-        tone: 'diary',
       },
       {
         id: 'net',
         label: '収支',
         value: formatAmount(summary.net, { showsPlusSign: true }),
         sub: `貯蓄率 ${savingRate}%`,
-        tone: 'calendar',
       },
       {
         id: 'budget',
         label: '予算消化率',
         value: budgetTotal > 0 ? `${budgetRate}%` : '—',
         sub: budgetTotal > 0 ? `残り ${formatAmount(remaining)}` : '予算が未設定です',
-        tone: 'notes',
       },
     ],
     categories,
@@ -327,18 +299,6 @@ export function useDeleteTransaction() {
       void queryClient.invalidateQueries({ queryKey: ['core'] });
     },
   });
-}
-
-/** カテゴリ構成比から conic-gradient の指定を組み立てる(ドーナツ)。 */
-export function buildDonutGradient(categories: readonly CategoryBreakdown[]): string {
-  if (categories.length === 0) return 'var(--color-surface-strong)';
-  let cursor = 0;
-  const stops = categories.map((category) => {
-    const start = cursor;
-    cursor += category.percentage;
-    return `${category.colorVar} ${start}% ${cursor}%`;
-  });
-  return `conic-gradient(${stops.join(', ')})`;
 }
 
 export interface MoneyAccountsResult {

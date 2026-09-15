@@ -34,7 +34,7 @@ packages/shared/src/
 └── database.types.ts  # gen:types の生成物(手編集禁止)
 
 apps/web/src/
-├── styles/        # デザイントークン(tokens.css)・グローバルスタイル
+├── components/ui/ # shadcn/ui の取り込み(手で直すのは意図がある場合のみ)
 ├── components/    # モジュール横断の共通 UI(Button, Dialog, EmptyState …)
 ├── lib/           # supabase クライアント、QueryClient、ユーティリティ
 ├── core/          # 認証・AppShell・モジュール管理・設定などコア画面
@@ -59,10 +59,18 @@ apps/web/src/
 
 ## 6. スタイル・デザイン準拠
 
-- 色・タイポグラフィ・余白・角丸・影は `styles/tokens.css` の CSS 変数のみを参照する。**コンポーネント内での色コードのハードコード禁止**(トークンは Claude Design の成果物から抽出して同期する)。
-- スタイルは CSS Modules(`*.module.css`)で書く。インラインスタイルは動的な値(座標・進捗率など)のみに使う。
-- レイアウトの状態網羅: 一覧系画面はローディング(Skeleton)・エラー(ErrorState)・0件(EmptyState)の3状態を必ず実装する。
-- ライトモードのみ対応(01_screen_design.md 3.1)。ただし色は必ずトークン経由にし、将来のダークモード追加をトークン差し替えで行えるようにする。
+ADR-0008 により、デザインシステムは **shadcn/ui の既定(`baseColor=neutral`)** を正とする。
+
+- スタイルは **Tailwind のユーティリティクラス**で書く。CSS Modules は新規に作らない(旧 `*.module.css` は移行完了とともに削除)。
+- 色は **shadcn のテーマ変数**(`bg-primary` / `text-muted-foreground` / `border` など)のみを参照する。**独自の色コード・独自トークンの追加は禁止**。
+  - 例外は「色そのものが情報である」ごく少数の箇所のみ(曜日の赤/青、金額の符号、期限切れの警告)。その場合も Tailwind 標準パレット(`red-600` など)から選び、`dark:` の対も書く。
+- アイコンは **lucide-react** のみを使う(ADR-0008)。文字や絵文字でアイコンを代用しない。同じ用途のアイコンはサイズを揃える。
+- インラインスタイルは動的な値(座標・進捗率など)のみに使う。クラスの結合は `cn`(`@/lib/utils`)。
+- **自前で作る前に `components/ui/`(shadcn)と `components/`(共通部品)を探す。** 特に Dialog / Select / Popover / ToggleGroup のようなキーボード操作とフォーカス管理を伴うものは絶対に自前実装しない。
+- 入力には必ずラベルを結びつける(`htmlFor`/`id`、または `components/TextField`)。視覚ラベルが無い操作には `aria-label` を付ける。
+- 画面遷移は `<a>` / `<Link>` で提供する(`<button onClick={navigate}>` にしない)。
+- レイアウトの状態網羅: 一覧系画面はローディング(Skeleton)・エラー(ErrorState)・0件(EmptyState)の3状態を必ず実装する。**0 件と「検索に一致しない」は別の文言にする。**
+- **実装されていない機能のボタンを置かない。** `onClick` の無いボタン、成功トーストだけ出して何もしない処理、事実と異なる状態表示(「端末に保存済み」など)は作らない。
 
 ## 7. React
 
@@ -77,6 +85,18 @@ apps/web/src/
 - ドメインロジック(`shared/domain`)は分岐網羅を意識する。金額計算・RRULE 展開が最優先(06_test_policy.md 1.2)。
 - テスト名は日本語で「何を保証するか」を書く(例: `振替は収入・支出のどちらにも計上しない`)。
 - モックは境界(リポジトリ関数)でのみ行い、supabase-js を直接モックしない。
+- **実装を消しても通るテストを書かない。** 分岐を検証するテストには、その分岐でしか落ちない入力を必ず混ぜる(例: カテゴリ未設定の除外を見るなら、カテゴリ未設定かつ対象 kind の行を入れる)。
+- 要素はアクセシビリティ経由で引く(`getByRole` / `getByLabelText`)。DOM の入れ子(`closest()` / `parentElement`)や位置インデックスに依存しない。一意に引けないときは、テストを工夫するのではなく**実装側に `aria-label` を足す**。
+- 固定文字列を返すだけのモックに対して「表示されること」だけを確認しない。**引数が正しく渡ったこと**(`toHaveBeenCalledWith`)もあわせて見る。
+
+### jsdom で Radix(shadcn/ui)を動かすための前提
+
+`apps/web/src/test/setup.ts` が補っている。新しいテストが動かないときはまずここを疑う。
+
+- **`PointerEvent` が無い**。無いと userEvent の `click` が `pointerdown` を `MouseEvent` として投げ、`button` / `pointerType` が欠けて Select・DropdownMenu・Popover が開かない。
+- **`nwsapi`(セレクタエンジン)の `:modal` / `:fullscreen` 判定が自己再帰する**。floating-ui が位置計算のたびに `matches(':modal')` を呼ぶため、メニューを開いたテストの直後の `findBy*` / `waitFor` が 7 秒以上止まる。`Element.prototype.matches` をラップして該当の擬似クラスを不一致にしている。
+- `matchMedia` / `ResizeObserver` / pointer capture / `scrollIntoView` も存在しないので補っている。
+- Radix の `Select` はトリガーが `combobox` ロール。メニュー・ポップオーバーの中身は**ポータルで `body` 直下**に出るので、`within(dialog)` では引けない(`screen` から引く)。
 
 ## 9. Git
 
