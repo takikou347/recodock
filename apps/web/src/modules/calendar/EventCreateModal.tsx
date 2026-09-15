@@ -1,3 +1,4 @@
+import { CalendarDaysIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { AppError, type CalendarEventRecord, eventsRepo, formatTime } from '@recodock/shared';
@@ -133,7 +134,7 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
       isOpen={isOpen}
       onClose={onClose}
       title={event ? '予定を編集' : '予定を作成'}
-      icon="calendar"
+      icon={CalendarDaysIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -192,7 +193,7 @@ export function EventCreateModal({ isOpen, date, event, onClose }: EventCreateMo
           </div>
         </div>
         <div className={styles.allDay}>
-          <Toggle isOn={isAllDay} onChange={setIsAllDay} label="終日" size="sm" ariaLabel="終日" />
+          <Toggle isOn={isAllDay} onChange={setIsAllDay} label="終日" />
         </div>
       </div>
 

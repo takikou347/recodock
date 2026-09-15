@@ -85,7 +85,7 @@ export function BudgetsPage() {
         <Skeleton lineCount={4} hasBlock />
       ) : (
         <>
-          <Card tone="notes">
+          <Card>
             <div className={styles.statusHead}>
               <p className={styles.statusLabel}>今月の予算</p>
               <p className={styles.statusBudget}>

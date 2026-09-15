@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { MapPinIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import type { SpotRecord } from '@recodock/shared';
@@ -33,7 +34,7 @@ export function SpotDetailModal({ isOpen, spot, onClose, onEdit }: SpotDetailMod
       isOpen={isOpen}
       onClose={onClose}
       title={spot.name}
-      icon="map"
+      icon={MapPinIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

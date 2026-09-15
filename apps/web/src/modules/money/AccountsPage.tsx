@@ -1,3 +1,4 @@
+import { PlusIcon, WalletIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 
@@ -48,7 +49,7 @@ export function AccountsPage() {
         <h1 className={layout.titleSm}>口座・残高</h1>
         <span className={layout.count}>{accounts.length}件</span>
         <div className={layout.actions}>
-          <Button variant="primary" icon="plus" onClick={() => setEditing('new')}>
+          <Button variant="primary" icon={PlusIcon} onClick={() => setEditing('new')}>
             口座を追加
           </Button>
         </div>
@@ -64,18 +65,18 @@ export function AccountsPage() {
         <Skeleton lineCount={3} hasBlock />
       ) : accounts.length === 0 ? (
         <EmptyState
-          icon="money"
+          icon={WalletIcon}
           title="まだ口座がありません"
           description="現金・銀行・クレカ・電子マネーを登録して残高を管理できます"
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={() => setEditing('new')}>
+            <Button variant="primary" size="sm" icon={PlusIcon} onClick={() => setEditing('new')}>
               口座を追加
             </Button>
           }
         />
       ) : (
         <>
-          <Card tone="money">
+          <Card>
             <p className={styles.totalLabel}>総残高</p>
             <p className={styles.totalValue}>{formatAmount(totalBalance)}</p>
           </Card>
@@ -170,7 +171,7 @@ function AccountEditModal({ isOpen, account, onClose }: AccountEditModalProps) {
       isOpen={isOpen}
       onClose={onClose}
       title={account ? '口座を編集' : '口座を追加'}
-      icon="money"
+      icon={WalletIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

@@ -1,3 +1,4 @@
+import { CalendarDaysIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -47,13 +48,7 @@ export function DayEntriesPage() {
         <h1 className={layout.title}>{formatHeadingDate(date)}</h1>
         <div className={styles.summary}>
           {sections.map((section) => (
-            <Chip
-              key={section.moduleKey}
-              tone={section.moduleKey}
-              isSelected
-              size="sm"
-              count={section.rows.length}
-            >
+            <Chip key={section.moduleKey} isSelected size="sm" count={section.rows.length}>
               {section.label.split(' · ')[0]}
             </Chip>
           ))}
@@ -69,7 +64,7 @@ export function DayEntriesPage() {
         <Skeleton lineCount={4} hasBlock />
       ) : sections.length === 0 ? (
         <EmptyState
-          icon="calendar"
+          icon={CalendarDaysIcon}
           title="この日の記録はまだありません"
           description="カレンダーの ＋ から予定や記録を追加できます"
         />

@@ -1,4 +1,7 @@
-import styles from './Toggle.module.css';
+import { useId } from 'react';
+
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 export interface ToggleProps {
   isOn: boolean;
@@ -7,34 +10,25 @@ export interface ToggleProps {
   label?: string;
   ariaLabel?: string;
   isDisabled?: boolean;
-  size?: 'sm' | 'md';
 }
 
-/** トグルスイッチ(1e 選択コントロール)。ON はモジュール淡色。 */
-export function Toggle({
-  isOn,
-  onChange,
-  label,
-  ariaLabel,
-  isDisabled = false,
-  size = 'md',
-}: ToggleProps) {
+/** ON/OFF のスイッチ。実体は Radix の Switch。 */
+export function Toggle({ isOn, onChange, label, ariaLabel, isDisabled = false }: ToggleProps) {
+  const id = useId();
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={isOn}
-      aria-label={label ? undefined : ariaLabel}
-      disabled={isDisabled}
-      onClick={() => onChange(!isOn)}
-      className={[styles.root, isOn ? styles.on : '', size === 'sm' ? styles.sm : '']
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <span className={styles.track}>
-        <span className={styles.knob} />
-      </span>
-      {label ? <span className={styles.label}>{label}</span> : null}
-    </button>
+    <div className="flex items-center gap-2">
+      <Switch
+        id={id}
+        checked={isOn}
+        onCheckedChange={onChange}
+        disabled={isDisabled}
+        aria-label={label ? undefined : ariaLabel}
+      />
+      {label ? (
+        <Label htmlFor={id} className="text-sm font-normal">
+          {label}
+        </Label>
+      ) : null}
+    </div>
   );
 }

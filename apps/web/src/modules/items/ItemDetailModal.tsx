@@ -1,3 +1,5 @@
+import { PackageIcon } from 'lucide-react';
+
 import type { ItemRecord } from '@recodock/shared';
 import { formatAmount, formatDateValue } from '@recodock/shared';
 
@@ -26,7 +28,7 @@ export function ItemDetailModal({ isOpen, item, onClose, onEdit }: ItemDetailMod
       isOpen={isOpen}
       onClose={onClose}
       title={item.name}
-      icon="items"
+      icon={PackageIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

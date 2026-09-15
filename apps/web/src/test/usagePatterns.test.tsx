@@ -79,8 +79,10 @@ describe('予定作成(CAL-12): FAB から予定を保存する', () => {
     const dialog = await screen.findByRole('dialog', { name: '予定を作成' });
     await user.type(within(dialog).getByLabelText('タイトル'), '読書会');
     // 既定は「繰り返さない」。毎週(土曜)を明示的に選ぶ
-    await user.click(within(dialog).getByRole('button', { name: '繰り返し' }));
-    await user.click(within(dialog).getByRole('option', { name: /毎週/ }));
+    // Radix の Select はトリガーが combobox ロール(ADR-0008 で自前実装から置き換え)
+    await user.click(within(dialog).getByRole('combobox', { name: '繰り返し' }));
+    // 選択肢はポータルで body 直下に出るので dialog の内側からは引けない
+    await user.click(await screen.findByRole('option', { name: /毎週/ }));
     await user.click(within(dialog).getByRole('button', { name: '保存する' }));
 
     await waitFor(() => expect(eventsRepo.create).toHaveBeenCalled());

@@ -1,3 +1,4 @@
+import { MapPinIcon, PlusIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 
@@ -55,7 +56,7 @@ export function MapPage() {
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
-          <Button variant="primary" icon="plus" onClick={() => setEditSpot('new')}>
+          <Button variant="primary" icon={PlusIcon} onClick={() => setEditSpot('new')}>
             スポットを追加
           </Button>
         </div>
@@ -64,7 +65,6 @@ export function MapPage() {
             すべて
           </Chip>
           <Chip
-            tone="map"
             count={counts.visited}
             isSelected={status === 'visited'}
             onClick={() => setStatus('visited')}
@@ -72,7 +72,6 @@ export function MapPage() {
             訪問済み
           </Chip>
           <Chip
-            tone="calendar"
             count={counts.wishlist}
             isSelected={status === 'wishlist'}
             onClick={() => setStatus('wishlist')}
@@ -80,7 +79,6 @@ export function MapPage() {
             行きたい
           </Chip>
           <Chip
-            tone="diary"
             count={counts.diary}
             isSelected={status === 'diary'}
             onClick={() => setStatus('diary')}
@@ -101,7 +99,7 @@ export function MapPage() {
       ) : spots.length === 0 ? (
         <div className={styles.states}>
           <EmptyState
-            icon="map"
+            icon={MapPinIcon}
             title="この条件のスポットはありません"
             description="日記や予定に位置情報を付けるとここに並びます"
           />

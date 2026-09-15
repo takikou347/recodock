@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import type { CategoryRecord } from '@recodock/shared';
@@ -117,7 +118,7 @@ export function CategoriesPage() {
                   収入用
                 </button>
               </div>
-              <Button variant="primary" icon="plus" onClick={() => void onAdd()}>
+              <Button variant="primary" icon={PlusIcon} onClick={() => void onAdd()}>
                 追加
               </Button>
             </div>

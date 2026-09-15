@@ -1,3 +1,4 @@
+import { PlusIcon, StickyNoteIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,7 +39,7 @@ export function NotesListPage() {
         <h1 className={layout.titleSm}>メモ</h1>
         <span className={layout.count}>{totalCount}件</span>
         <div className={layout.actions}>
-          <Button variant="primary" icon="plus" onClick={() => setIsCreateOpen(true)}>
+          <Button variant="primary" icon={PlusIcon} onClick={() => setIsCreateOpen(true)}>
             新規メモ
           </Button>
         </div>
@@ -50,11 +51,16 @@ export function NotesListPage() {
         <Skeleton lineCount={4} hasBlock />
       ) : totalCount === 0 ? (
         <EmptyState
-          icon="notes"
+          icon={StickyNoteIcon}
           title="まだメモがありません"
           description="Markdown で書けます。よく使うメモはピン留めできます"
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={() => setIsCreateOpen(true)}>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={PlusIcon}
+              onClick={() => setIsCreateOpen(true)}
+            >
               新規メモ
             </Button>
           }
@@ -114,7 +120,7 @@ export function NotesListPage() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="新規メモ"
-        icon="notes"
+        icon={StickyNoteIcon}
         fieldLabel="メモのタイトル"
         placeholder="鴨川で読む本リスト"
         isSaving={createNote.isPending}

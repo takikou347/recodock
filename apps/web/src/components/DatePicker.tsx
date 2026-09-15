@@ -1,13 +1,14 @@
-import type { CSSProperties } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { formatDateValue, WEEKDAYS } from '@recodock/shared';
 
 import { buildMonthGrid, isSameDay, shiftMonth } from '../lib/calendarGrid';
-import { weekdayColorVar } from '../lib/format';
-import { Icon } from './icons/Icon';
+import { weekdayTextClass } from '../lib/format';
 
-import styles from './DatePicker.module.css';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export interface DatePickerProps {
   value: Date;
@@ -15,114 +16,81 @@ export interface DatePickerProps {
   ariaLabel: string;
 }
 
-/** 日付ピッカー(1e)。入力欄をクリックすると月グリッドのパネルを開く。 */
+/** 日付ピッカー。実体は Radix の Popover なので ESC・外側クリック・フォーカス復帰が付く。 */
 export function DatePicker({ value, onChange, ariaLabel }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(value.getFullYear(), value.getMonth(), 1),
   );
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen]);
 
   const cells = buildMonthGrid(visibleMonth, value);
 
   return (
-    <div className={styles.root} ref={rootRef}>
-      <button
-        type="button"
-        className={[styles.trigger, isOpen ? styles.open : ''].filter(Boolean).join(' ')}
-        aria-label={ariaLabel}
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
-      >
-        {formatDateValue(value)}
-        <span className={styles.triggerIcon}>
-          <Icon name="calendar" size={17} />
-        </span>
-      </button>
-
-      {isOpen ? (
-        <div className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.panelMonth}>
-              {visibleMonth.getFullYear()}年 {visibleMonth.getMonth() + 1}月
-            </span>
-            <div className={styles.panelNav}>
-              <button
-                type="button"
-                className={styles.navButton}
-                aria-label="前の月"
-                onClick={() => setVisibleMonth((month) => shiftMonth(month, -1))}
-              >
-                <Icon name="chevronLeft" size={12} />
-              </button>
-              <button
-                type="button"
-                className={styles.navButton}
-                aria-label="次の月"
-                onClick={() => setVisibleMonth((month) => shiftMonth(month, 1))}
-              >
-                <Icon name="chevronRight" size={12} />
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.weekdays}>
-            {WEEKDAYS.map((label, index) => {
-              const style: CSSProperties = {
-                '--day-color': weekdayColorVar(index),
-              } as CSSProperties;
-              return (
-                <span key={label} className={styles.weekday} style={style}>
-                  {label}
-                </span>
-              );
-            })}
-          </div>
-
-          <div className={styles.grid}>
-            {cells.map((cell) => {
-              const isSelected = isSameDay(cell.date, value);
-              return (
-                <span key={cell.date.toISOString()} className={styles.dayCell}>
-                  <button
-                    type="button"
-                    className={[
-                      styles.day,
-                      cell.isOutside ? styles.outside : '',
-                      isSelected ? styles.selected : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    aria-pressed={isSelected}
-                    onClick={() => {
-                      onChange(cell.date);
-                      setIsOpen(false);
-                    }}
-                  >
-                    {cell.date.getDate()}
-                  </button>
-                </span>
-              );
-            })}
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" aria-label={ariaLabel} className="justify-between font-normal">
+          {formatDateValue(value)}
+          <CalendarDaysIcon className="text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="start">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">
+            {visibleMonth.getFullYear()}年 {visibleMonth.getMonth() + 1}月
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="前の月"
+              onClick={() => setVisibleMonth((month) => shiftMonth(month, -1))}
+            >
+              <ChevronLeftIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="次の月"
+              onClick={() => setVisibleMonth((month) => shiftMonth(month, 1))}
+            >
+              <ChevronRightIcon />
+            </Button>
           </div>
         </div>
-      ) : null}
-    </div>
+
+        <div className="grid grid-cols-7 gap-0.5">
+          {WEEKDAYS.map((label, index) => (
+            <span
+              key={label}
+              className={cn('py-1 text-center text-xs', weekdayTextClass(index))}
+              aria-hidden="true"
+            >
+              {label}
+            </span>
+          ))}
+          {cells.map((cell) => {
+            const isSelected = isSameDay(cell.date, value);
+            return (
+              <button
+                key={cell.date.toISOString()}
+                type="button"
+                aria-pressed={isSelected}
+                className={cn(
+                  'focus-visible:ring-ring/50 size-8 rounded-md text-sm tabular-nums focus-visible:ring-[3px] focus-visible:outline-none',
+                  cell.isOutside && 'text-muted-foreground/50',
+                  isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                )}
+                onClick={() => {
+                  onChange(cell.date);
+                  setIsOpen(false);
+                }}
+              >
+                {cell.date.getDate()}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
