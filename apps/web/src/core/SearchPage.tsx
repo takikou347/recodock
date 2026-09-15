@@ -1,3 +1,4 @@
+import { SearchIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +56,6 @@ export function SearchPage() {
         {[...countsByModule].map(([moduleKey, count]) => (
           <Chip
             key={moduleKey}
-            tone={moduleKey}
             count={count}
             isSelected={filter === moduleKey}
             onClick={() => setFilter(moduleKey)}
@@ -75,7 +75,7 @@ export function SearchPage() {
         <Skeleton lineCount={4} hasBlock />
       ) : visibleEntries.length === 0 ? (
         <EmptyState
-          icon="search"
+          icon={SearchIcon}
           title="一致する記録がありません"
           description="キーワードを変えるか、フィルタを外してみてください"
         />

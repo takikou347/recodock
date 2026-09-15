@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckIcon, PinIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -127,7 +128,7 @@ export function NoteEditorPage() {
           <Button
             variant={isPinned ? 'primary' : 'secondary'}
             size="sm"
-            icon="pin"
+            icon={PinIcon}
             onClick={() => {
               setIsPinned((current) => !current);
               markDirty();
@@ -150,7 +151,7 @@ export function NoteEditorPage() {
       />
 
       <div className={styles.toolbar} role="toolbar" aria-label="入力支援">
-        <Button variant="text" size="sm" icon="check" onClick={insertChecklist}>
+        <Button variant="text" size="sm" icon={CheckIcon} onClick={insertChecklist}>
           チェックリスト
         </Button>
         <span className={styles.toolbarHint}>Markdown で書けます(- [ ] でチェックリスト)</span>

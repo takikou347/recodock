@@ -1,11 +1,10 @@
+import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Icon } from './icons/Icon';
+import { Button } from '@/components/ui/button';
 
-import styles from './Toast.module.css';
-
-/** 4秒で自動消滅(1e トースト) */
+/** 4秒で自動消滅 */
 const TOAST_DURATION_MS = 4000;
 
 interface Toast {
@@ -49,7 +48,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
   return (
     <ToastContext value={value}>
       {children}
-      <div className={styles.region} role="status" aria-live="polite">
+      <div
+        className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4"
+        role="status"
+        aria-live="polite"
+      >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
@@ -72,22 +75,21 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   }, [id, onDismiss]);
 
   return (
-    <div className={styles.toast}>
-      <span className={styles.icon}>
-        <Icon name="check" size={13} />
-      </span>
-      <span className={styles.message}>{toast.message}</span>
+    <div className="bg-primary text-primary-foreground pointer-events-auto flex items-center gap-2 rounded-lg px-3 py-2 text-sm shadow-lg">
+      <CheckIcon className="size-4 shrink-0" aria-hidden="true" />
+      <span>{toast.message}</span>
       {toast.onUndo ? (
-        <button
-          type="button"
-          className={styles.undo}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hover:bg-primary-foreground/15 hover:text-primary-foreground -mr-1 ml-1 h-6 underline underline-offset-2"
           onClick={() => {
             toast.onUndo?.();
             onDismiss(id);
           }}
         >
           元に戻す
-        </button>
+        </Button>
       ) : null}
     </div>
   );

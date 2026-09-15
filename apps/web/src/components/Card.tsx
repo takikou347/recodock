@@ -1,8 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-import type { ModuleKey } from '@recodock/shared';
-
-import styles from './Card.module.css';
+import { cn } from '@/lib/utils';
 
 export interface CardProps {
   children: ReactNode;
@@ -10,43 +8,30 @@ export interface CardProps {
   isRow?: boolean;
   /** 中身が自前で余白を持つ場合(リスト・テーブル) */
   isFlush?: boolean;
-  /** モジュール淡色で塗る */
-  tone?: ModuleKey;
   /** クリックできるカードにする */
   onClick?: () => void;
   className?: string;
 }
 
-/** 共通カード(1a 共通部品: 実線 1.5px ＋ オフセット影)。 */
-export function Card({ children, isRow, isFlush, tone, onClick, className }: CardProps) {
-  const toneStyle: CSSProperties | undefined = tone
-    ? ({
-        '--tone-bg': `var(--color-${tone}-bg)`,
-        '--tone-line': `var(--color-${tone}-line)`,
-      } as CSSProperties)
-    : undefined;
-
-  const classes = [
-    styles.card,
-    isRow ? styles.row : '',
-    isFlush ? styles.flush : '',
-    tone ? styles.toned : '',
-    onClick ? styles.clickable : '',
+/**
+ * 共通カード。モジュール別の塗り分け(旧 `tone`)は ADR-0008 で廃止した。
+ * 画面の移行が終わったら、このラッパーは外して `ui/card` を直接使う。
+ */
+export function Card({ children, isRow, isFlush, onClick, className }: CardProps) {
+  const classes = cn(
+    'bg-card text-card-foreground rounded-xl border',
+    isFlush ? 'p-0' : isRow ? 'p-3' : 'p-4',
+    onClick &&
+      'hover:bg-muted/50 focus-visible:ring-ring/50 w-full text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none',
     className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  );
 
   if (onClick) {
     return (
-      <button type="button" className={classes} style={toneStyle} onClick={onClick}>
+      <button type="button" className={classes} onClick={onClick}>
         {children}
       </button>
     );
   }
-  return (
-    <div className={classes} style={toneStyle}>
-      {children}
-    </div>
-  );
+  return <div className={classes}>{children}</div>;
 }

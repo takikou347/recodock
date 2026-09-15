@@ -1,73 +1,54 @@
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
 
-import type { IconName } from './icons/Icon';
-import { Icon } from './icons/Icon';
-
-import styles from './Overlay.module.css';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  /** 見出し左のモジュールアイコン */
-  icon?: IconName;
+  /** 見出しの下に出す補足 */
+  description?: string;
+  /** 見出し左のアイコン(lucide) */
+  icon?: LucideIcon;
   /** 操作ボタン。省略すると footer を描画しない */
   footer?: ReactNode;
   children: ReactNode;
 }
 
 /**
- * PC = 画面中央モーダル / SP = ボトムシート(1e オーバーレイ規則)。
- * ESC とスクリムのクリックで閉じ、開いている間は背面のスクロールを止める。
+ * 共通モーダル。実体は Radix の Dialog なので、フォーカストラップ・ESC・
+ * スクロールロック・`aria-modal` が揃う(監査 H-14)。
  */
-export function Modal({ isOpen, onClose, title, icon, footer, children }: ModalProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // 外部システム(document のキー入力・スクロール)との同期(コーディング規約 7)
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  description,
+  icon: Icon,
+  footer,
+  children,
+}: ModalProps) {
   return (
-    <div className={styles.scrim} onClick={onClose} role="presentation">
-      <div
-        ref={panelRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <span className={styles.grabber} />
-        <div className={styles.header}>
-          {icon ? (
-            <span className={styles.badge}>
-              <Icon name={icon} size={21} />
-            </span>
-          ) : null}
-          <h2 className={styles.title}>{title}</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="閉じる">
-            <Icon name="close" size={17} />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent className="max-h-[calc(100svh-2rem)] gap-4 overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {Icon ? <Icon className="text-muted-foreground size-4" /> : null}
+            {title}
+          </DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
         {children}
-        {footer ? <div className={styles.footer}>{footer}</div> : null}
-      </div>
-    </div>
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
 }

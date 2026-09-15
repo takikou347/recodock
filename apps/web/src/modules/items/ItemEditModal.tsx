@@ -1,3 +1,4 @@
+import { PackageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ItemRecord } from '@recodock/shared';
@@ -93,7 +94,7 @@ export function ItemEditModal({ isOpen, item, onClose }: ItemEditModalProps) {
       isOpen={isOpen}
       onClose={onClose}
       title={item ? '持ち物を編集' : '持ち物を追加'}
-      icon="items"
+      icon={PackageIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

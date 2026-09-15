@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -76,12 +76,11 @@ describe('認証(SC-01): ログインしないと記録に入れない', () => {
   it('ログイン済みならサイドバーにユーザー名が出て、ログアウトできる', async () => {
     renderApp({ route: '/' });
 
-    // 誤操作防止のため、ユーザーメニューを開いてからログアウトする。
-    // jsdom には PointerEvent が無く userEvent の click ではメニューが開かないので、
-    // キーボードイベントで同期的に開き、項目も同期クエリで引く(メニューは同じ act 内で描画される)。
-    const trigger = await screen.findByRole('button', { name: /瀧川皓太/ });
-    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
-    fireEvent.click(screen.getByText('ログアウト'));
+    const user = userEvent.setup();
+
+    // 誤操作防止のため、ユーザーメニューを開いてからログアウトする
+    await user.click(await screen.findByRole('button', { name: /瀧川皓太/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'ログアウト' }));
 
     expect(authRepo.signOut).toHaveBeenCalledTimes(1);
   });

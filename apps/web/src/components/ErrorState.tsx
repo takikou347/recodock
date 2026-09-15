@@ -1,6 +1,7 @@
-import { Button } from './Button';
+import { TriangleAlertIcon } from 'lucide-react';
 
-import styles from './States.module.css';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 export interface ErrorStateProps {
   title: string;
@@ -9,22 +10,20 @@ export interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-/** エラー表示(1e フィードバック状態)。記録は端末に残る前提で復帰導線を出す。 */
+/** エラー表示。読み込みに失敗した領域の代わりに出す。 */
 export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
   return (
-    <div className={styles.error} role="alert">
-      <span className={styles.errorIcon} aria-hidden="true">
-        !
-      </span>
-      <div className={styles.errorText}>
-        <p className={styles.errorTitle}>{title}</p>
-        <p className={styles.errorBody}>{description}</p>
-      </div>
-      {onRetry ? (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
-          再試行
-        </Button>
-      ) : null}
-    </div>
+    <Alert variant="destructive">
+      <TriangleAlertIcon />
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>
+        <p>{description}</p>
+        {onRetry ? (
+          <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
+            再試行
+          </Button>
+        ) : null}
+      </AlertDescription>
+    </Alert>
   );
 }

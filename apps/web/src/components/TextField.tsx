@@ -1,7 +1,9 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { useId } from 'react';
 
-import styles from './TextField.module.css';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
@@ -15,7 +17,11 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   isNumeric?: boolean;
 }
 
-/** 共通の単一行入力(1e 入力欄)。 */
+/**
+ * ラベル・補助文・エラーをひとまとめにした単一行入力。
+ * `htmlFor` / `aria-describedby` / `aria-invalid` をここで必ず結びつけるため、
+ * 画面側で label を自前に組まない(監査 H-12)。
+ */
 export function TextField({
   label,
   labelAside,
@@ -35,32 +41,26 @@ export function TextField({
       : undefined;
 
   return (
-    <div
-      className={[styles.field, errorText ? styles.hasError : '', className]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <div className={styles.labelRow}>
-        <label className={styles.label} htmlFor={inputId}>
-          {label}
-        </label>
-        {labelAside ? <span className={styles.labelAside}>{labelAside}</span> : null}
+    <div className={cn('grid gap-2', className)}>
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={inputId}>{label}</Label>
+        {labelAside ? <span className="text-muted-foreground text-sm">{labelAside}</span> : null}
       </div>
-      <input
+      <Input
         id={inputId}
-        className={[styles.input, isNumeric ? styles.numeric : ''].filter(Boolean).join(' ')}
+        className={cn(isNumeric && 'font-mono tabular-nums')}
         aria-invalid={errorText ? true : undefined}
         aria-describedby={describedById}
         {...rest}
       />
       {errorText ? (
-        <span id={`${inputId}-error`} className={styles.error}>
+        <p id={`${inputId}-error`} className="text-destructive text-xs">
           {errorText}
-        </span>
+        </p>
       ) : helperText ? (
-        <span id={`${inputId}-helper`} className={styles.helper}>
+        <p id={`${inputId}-helper`} className="text-muted-foreground text-xs">
           {helperText}
-        </span>
+        </p>
       ) : null}
     </div>
   );

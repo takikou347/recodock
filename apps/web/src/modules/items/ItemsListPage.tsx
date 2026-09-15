@@ -1,3 +1,4 @@
+import { PackageIcon, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '../../components/Button';
@@ -30,7 +31,7 @@ export function ItemsListPage() {
         <h1 className={layout.titleSm}>持ち物</h1>
         <span className={layout.count}>{totalCount}件</span>
         <div className={layout.actions}>
-          <Button variant="primary" icon="plus" onClick={() => setEditItem('new')}>
+          <Button variant="primary" icon={PlusIcon} onClick={() => setEditItem('new')}>
             持ち物を追加
           </Button>
         </div>
@@ -55,7 +56,6 @@ export function ItemsListPage() {
         {categories.map((entry) => (
           <Chip
             key={entry.id}
-            tone={entry.id === 'warning' ? 'diary' : 'items'}
             count={entry.count}
             isSelected={category === entry.id}
             onClick={() => setCategory(entry.id)}
@@ -74,11 +74,11 @@ export function ItemsListPage() {
         <Skeleton lineCount={3} hasBlock />
       ) : items.length === 0 ? (
         <EmptyState
-          icon="items"
+          icon={PackageIcon}
           title="まだ持ち物がありません"
           description="保証期限や保管場所と一緒に登録できます"
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={() => setEditItem('new')}>
+            <Button variant="primary" size="sm" icon={PlusIcon} onClick={() => setEditItem('new')}>
               持ち物を追加
             </Button>
           }

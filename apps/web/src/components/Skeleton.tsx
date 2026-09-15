@@ -1,6 +1,4 @@
-import type { CSSProperties } from 'react';
-
-import styles from './States.module.css';
+import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 
 export interface SkeletonProps {
   /** 行数。形は実コンテンツに合わせる */
@@ -9,18 +7,17 @@ export interface SkeletonProps {
   hasBlock?: boolean;
 }
 
-// 実コンテンツに近い不揃いさを出すための幅(動的値なのでインラインで渡す)
-const LINE_WIDTHS = ['60%', '90%', '75%', '82%'];
+// 実コンテンツに近い不揃いさを出すための幅
+const LINE_WIDTHS = ['w-3/5', 'w-11/12', 'w-3/4', 'w-5/6'];
 
-/** 読み込み中のスケルトン(1e フィードバック状態)。 */
+/** 読み込み中のスケルトン。 */
 export function Skeleton({ lineCount = 3, hasBlock = false }: SkeletonProps) {
   return (
-    <div className={styles.skeleton} aria-busy="true" aria-label="読み込み中">
-      {Array.from({ length: lineCount }, (_, index) => {
-        const style: CSSProperties = { width: LINE_WIDTHS[index % LINE_WIDTHS.length] };
-        return <span key={index} className={styles.bar} style={style} />;
-      })}
-      {hasBlock ? <span className={styles.block} /> : null}
+    <div className="flex flex-col gap-2" aria-busy="true" aria-label="読み込み中">
+      {Array.from({ length: lineCount }, (_, index) => (
+        <UiSkeleton key={index} className={`h-4 ${LINE_WIDTHS[index % LINE_WIDTHS.length]}`} />
+      ))}
+      {hasBlock ? <UiSkeleton className="mt-2 h-32 w-full" /> : null}
     </div>
   );
 }

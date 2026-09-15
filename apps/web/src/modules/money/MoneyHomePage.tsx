@@ -1,3 +1,4 @@
+import { PlusIcon, WalletIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 
@@ -87,27 +88,20 @@ export function MoneyHomePage() {
           >
             CSV 出力
           </Button>
-          <Button variant="primary" icon="plus" onClick={() => setIsCreateOpen(true)}>
+          <Button variant="primary" icon={PlusIcon} onClick={() => setIsCreateOpen(true)}>
             取引を追加
           </Button>
         </div>
       </div>
 
       <div className={styles.stats}>
-        {stats.map((stat) => {
-          const toneStyle: CSSProperties = {
-            '--tone-fg': `var(--color-${stat.tone}-fg)`,
-          } as CSSProperties;
-          return (
-            <Card key={stat.id} tone={stat.tone}>
-              <div style={toneStyle}>
-                <p className={styles.statLabel}>{stat.label}</p>
-                <p className={styles.statValue}>{stat.value}</p>
-                <p className={styles.statSub}>{stat.sub}</p>
-              </div>
-            </Card>
-          );
-        })}
+        {stats.map((stat) => (
+          <Card key={stat.id}>
+            <p className={styles.statLabel}>{stat.label}</p>
+            <p className={styles.statValue}>{stat.value}</p>
+            <p className={styles.statSub}>{stat.sub}</p>
+          </Card>
+        ))}
       </div>
 
       <div className={styles.columns}>
@@ -186,7 +180,6 @@ export function MoneyHomePage() {
                 すべて
               </Chip>
               <Chip
-                tone="money"
                 size="sm"
                 isSelected={filters.kind === 'expense'}
                 onClick={() => setFilters((current) => ({ ...current, kind: 'expense' }))}
@@ -220,14 +213,14 @@ export function MoneyHomePage() {
               ) : transactions.length === 0 ? (
                 <div className={styles.states}>
                   <EmptyState
-                    icon="money"
+                    icon={WalletIcon}
                     title="まだ取引がありません"
                     description="最初の収支を記録してみましょう"
                     action={
                       <Button
                         variant="primary"
                         size="sm"
-                        icon="plus"
+                        icon={PlusIcon}
                         onClick={() => setIsCreateOpen(true)}
                       >
                         取引を追加

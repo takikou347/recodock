@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { MapPinIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { SpotRecord, SpotStatus } from '@recodock/shared';
@@ -108,7 +109,7 @@ export function SpotEditModal({ isOpen, spot, onClose }: SpotEditModalProps) {
       isOpen={isOpen}
       onClose={onClose}
       title={spot ? 'スポットを編集' : 'スポットを追加'}
-      icon="map"
+      icon={MapPinIcon}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

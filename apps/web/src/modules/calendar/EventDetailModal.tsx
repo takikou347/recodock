@@ -1,3 +1,4 @@
+import { CalendarDaysIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import type { CalendarEventRecord } from '@recodock/shared';
@@ -74,7 +75,7 @@ export function EventDetailModal({
       isOpen={isOpen}
       onClose={onClose}
       title={event.title}
-      icon="calendar"
+      icon={CalendarDaysIcon}
       footer={
         <>
           <Button

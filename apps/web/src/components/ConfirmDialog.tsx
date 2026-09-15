@@ -1,8 +1,14 @@
-import { useEffect } from 'react';
-
-import { Button } from './Button';
-
-import styles from './Overlay.module.css';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 
 export interface ConfirmDialogProps {
   isOpen: boolean;
@@ -15,8 +21,8 @@ export interface ConfirmDialogProps {
 }
 
 /**
- * 確認ダイアログ(1e オーバーレイ規則)。
- * 取り消せない操作にのみ使う。取り消せる操作はトーストの「元に戻す」で受ける。
+ * 確認ダイアログ。取り消せない操作にのみ使う(取り消せる操作はトーストの「元に戻す」で受ける)。
+ * 実体は Radix の AlertDialog で、開いた時点でフォーカスが移りトラップされる(監査 H-14)。
  */
 export function ConfirmDialog({
   isOpen,
@@ -26,37 +32,23 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, onCancel]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.scrim} onClick={onCancel} role="presentation">
-      <div
-        className={[styles.modal, styles.confirm].join(' ')}
-        role="alertdialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2 className={styles.confirmTitle}>{title}</h2>
-        <p className={styles.confirmBody}>{description}</p>
-        <div className={styles.confirmFooter}>
-          <Button variant="secondary" size="sm" onClick={onCancel}>
-            キャンセル
-          </Button>
-          <Button variant="danger" size="sm" onClick={onConfirm}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => (open ? undefined : onCancel())}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel}>キャンセル</AlertDialogCancel>
+          <AlertDialogAction
+            className={buttonVariants({ variant: 'destructive' })}
+            onClick={onConfirm}
+          >
             {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

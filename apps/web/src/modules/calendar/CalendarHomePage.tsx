@@ -1,3 +1,4 @@
+import { BookOpenIcon, CalendarDaysIcon, PlusIcon, WalletIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +21,7 @@ import { SegmentedControl } from '../../components/SegmentedControl';
 import { Skeleton } from '../../components/Skeleton';
 import { useAuth } from '../../core/auth';
 import { buildMonthGrid, isSameDay, shiftMonth, toDateKey } from '../../lib/calendarGrid';
-import { weekdayColorVar } from '../../lib/format';
+import { weekdayTextClass } from '../../lib/format';
 import { useCreateDiary } from '../diary/useDiaries';
 import { EventCreateModal } from './EventCreateModal';
 import { EventDetailModal } from './EventDetailModal';
@@ -29,6 +30,8 @@ import { useCalendarMonth, useDayEntries, useTodayEntries } from './useCalendarE
 
 import layout from '../../core/pageLayout.module.css';
 import styles from './CalendarHomePage.module.css';
+
+import { cn } from '@/lib/utils';
 
 type CalendarView = 'month' | 'week' | 'day';
 
@@ -130,14 +133,11 @@ export function CalendarHomePage() {
         </div>
 
         <div className={styles.weekdays}>
-          {WEEKDAYS.map((label, index) => {
-            const style: CSSProperties = { '--day-color': weekdayColorVar(index) } as CSSProperties;
-            return (
-              <span key={label} className={styles.weekday} style={style}>
-                {label}
-              </span>
-            );
-          })}
+          {WEEKDAYS.map((label, index) => (
+            <span key={label} className={cn(styles.weekday, weekdayTextClass(index))}>
+              {label}
+            </span>
+          ))}
         </div>
 
         {isError ? (
@@ -197,7 +197,12 @@ export function CalendarHomePage() {
               : `${formatHeadingDate(selectedDate)}の記録`}
           </h2>
           <div className={styles.detailActions}>
-            <Button variant="text" size="sm" icon="plus" onClick={() => setIsEventModalOpen(true)}>
+            <Button
+              variant="text"
+              size="sm"
+              icon={PlusIcon}
+              onClick={() => setIsEventModalOpen(true)}
+            >
               この日に予定を追加
             </Button>
           </div>
@@ -209,7 +214,7 @@ export function CalendarHomePage() {
           <Skeleton lineCount={3} />
         ) : todayEntries.entries.length === 0 ? (
           <EmptyState
-            icon="calendar"
+            icon={CalendarDaysIcon}
             title="この日の記録はまだありません"
             description="＋ から予定や記録を追加できます"
           />
@@ -225,19 +230,19 @@ export function CalendarHomePage() {
           actions={[
             {
               moduleKey: 'calendar',
-              icon: 'calendar',
+              icon: CalendarDaysIcon,
               label: '予定を作成',
               onSelect: () => setIsEventModalOpen(true),
             },
             {
               moduleKey: 'money',
-              icon: 'money',
+              icon: WalletIcon,
               label: '取引を追加',
               onSelect: () => navigate('/money'),
             },
             {
               moduleKey: 'diary',
-              icon: 'diary',
+              icon: BookOpenIcon,
               label: '日記を書く',
               onSelect: () => {
                 void createDiary
@@ -296,10 +301,6 @@ function DayCell({
   onOpenDay,
   onOpenEvent,
 }: DayCellProps) {
-  const numberStyle: CSSProperties = {
-    '--day-color': weekdayColorVar(date.getDay()),
-  } as CSSProperties;
-
   return (
     <div
       role="button"
@@ -314,7 +315,7 @@ function DayCell({
         if (keyEvent.key === 'Enter' || keyEvent.key === ' ') onSelect();
       }}
     >
-      <span className={styles.dayNumber} style={numberStyle}>
+      <span className={cn(styles.dayNumber, weekdayTextClass(date.getDay()))}>
         {date.getDate()}
       </span>
 
@@ -368,7 +369,7 @@ function DayView({ date, sections, isLoading, onOpenEvent }: DayViewProps) {
   if (sections.length === 0) {
     return (
       <EmptyState
-        icon="calendar"
+        icon={CalendarDaysIcon}
         title={`${formatHeadingDate(date)}の記録はまだありません`}
         description="＋ から予定や記録を追加できます"
       />

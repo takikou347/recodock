@@ -1,52 +1,40 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-import type { ModuleKey } from '@recodock/shared';
-
-import styles from './Chip.module.css';
+import { cn } from '@/lib/utils';
 
 export interface ChipProps {
   children: ReactNode;
   /** 件数を右に添える */
   count?: number;
   isSelected?: boolean;
-  /** 指定するとそのモジュールの淡色で塗る */
-  tone?: ModuleKey;
   size?: 'sm' | 'md';
   onClick?: () => void;
 }
 
 /**
- * フィルタチップ(1e 選択コントロール)。
- * tone を渡すとモジュール色、渡さない選択中はインク面(「すべて」)になる。
+ * フィルタチップ。押すと絞り込みが切り替わるので `aria-pressed` を持つ。
+ * モジュール別の塗り分け(旧 `tone`)は ADR-0008 で廃止した。
  */
-export function Chip({
-  children,
-  count,
-  isSelected = false,
-  tone,
-  size = 'md',
-  onClick,
-}: ChipProps) {
-  // 動的な値のみインラインで渡す(コーディング規約 6)。実際の色は tokens.css の変数。
-  const toneStyle: CSSProperties | undefined = tone
-    ? ({
-        '--tone-bg': `var(--color-${tone}-bg)`,
-        '--tone-fg': `var(--color-${tone}-fg)`,
-      } as CSSProperties)
-    : undefined;
-
-  const variant = !isSelected ? styles.neutral : tone ? styles.toned : styles.selected;
-
+export function Chip({ children, count, isSelected = false, size = 'md', onClick }: ChipProps) {
   return (
     <button
       type="button"
-      className={[styles.chip, variant, size === 'sm' ? styles.sm : ''].filter(Boolean).join(' ')}
-      style={toneStyle}
       aria-pressed={isSelected}
       onClick={onClick}
+      className={cn(
+        'focus-visible:ring-ring/50 inline-flex shrink-0 items-center gap-1.5 rounded-full border font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:outline-none',
+        size === 'sm' ? 'h-6 px-2.5 text-xs' : 'h-7 px-3 text-sm',
+        isSelected
+          ? 'bg-primary text-primary-foreground border-transparent'
+          : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground',
+      )}
     >
       {children}
-      {count !== undefined ? <span className={styles.count}>{count}</span> : null}
+      {count !== undefined ? (
+        <span className={cn('tabular-nums', isSelected ? 'opacity-80' : 'text-muted-foreground')}>
+          {count}
+        </span>
+      ) : null}
     </button>
   );
 }

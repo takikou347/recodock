@@ -1,3 +1,4 @@
+import { WalletIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { AppError, type TransactionRecord } from '@recodock/shared';
@@ -146,7 +147,7 @@ export function TransactionCreateModal({
       isOpen={isOpen}
       onClose={onClose}
       title={transaction ? '取引を編集' : '取引を追加'}
-      icon="money"
+      icon={WalletIcon}
       footer={
         <>
           {transaction ? (

@@ -1,3 +1,4 @@
+import { BookOpenIcon, PlusIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -64,7 +65,7 @@ export function DiaryListPage() {
         <div className={styles.listHead}>
           <div className={styles.listTitleRow}>
             <h1 className={styles.listTitle}>日記</h1>
-            <Button variant="primary" size="sm" icon="plus" onClick={() => void onCreate()}>
+            <Button variant="primary" size="sm" icon={PlusIcon} onClick={() => void onCreate()}>
               新規日記
             </Button>
           </div>
@@ -97,7 +98,7 @@ export function DiaryListPage() {
             <Skeleton lineCount={4} hasBlock />
           ) : diaries.length === 0 ? (
             <EmptyState
-              icon="diary"
+              icon={BookOpenIcon}
               title="一致する日記がありません"
               description="キーワードを変えてみてください"
             />
